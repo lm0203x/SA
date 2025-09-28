@@ -277,32 +277,65 @@ class RealtimeDataManager:
         data_list = []
         
         for _, row in df.iterrows():
-            # 构造完整的datetime
-            trade_date = str(row['trade_date'])
-            trade_time = str(row['trade_time']).zfill(4)  # 确保4位数
+            try:
+                # 构造完整的datetime - 处理不同的字段名
+                if 'trade_date' in row:
+                    trade_date = str(row['trade_date'])
+                elif 'trade_time' in row and len(str(row['trade_time'])) > 4:
+                    # 如果trade_time包含日期时间信息
+                    trade_datetime = str(row['trade_time'])
+                    if len(trade_datetime) >= 12:  # YYYYMMDDHHMM格式
+                        trade_date = trade_datetime[:8]
+                        trade_time = trade_datetime[8:12]
+                    else:
+                        # 使用当前日期
+                        trade_date = datetime.now().strftime('%Y%m%d')
+                        trade_time = str(row['trade_time']).zfill(4)
+                else:
+                    # 使用当前日期
+                    trade_date = datetime.now().strftime('%Y%m%d')
+                    trade_time = '0930'  # 默认开盘时间
+                
+                if 'trade_time' in row and len(str(row['trade_time'])) <= 4:
+                    trade_time = str(row['trade_time']).zfill(4)  # 确保4位数
+                elif 'trade_time' not in row:
+                    trade_time = '0930'  # 默认时间
+                
+                dt_str = f"{trade_date} {trade_time[:2]}:{trade_time[2:]}:00"
+                dt = datetime.strptime(dt_str, '%Y%m%d %H:%M:%S')
+            except Exception as e:
+                logger.warning(f"解析时间失败: {e}, 使用当前时间")
+                dt = datetime.now()
             
-            dt_str = f"{trade_date} {trade_time[:2]}:{trade_time[2:]}:00"
-            dt = datetime.strptime(dt_str, '%Y%m%d %H:%M:%S')
-            
-            # 计算涨跌幅等指标
-            pre_close = row.get('pre_close', row['open'])
-            change = row['close'] - pre_close
-            pct_chg = (change / pre_close * 100) if pre_close > 0 else 0
-            
-            data_list.append({
-                'ts_code': ts_code,
-                'datetime': dt,
-                'period_type': period_type,
-                'open': row['open'],
-                'high': row['high'],
-                'low': row['low'],
-                'close': row['close'],
-                'volume': row['vol'],
-                'amount': row['amount'],
-                'pre_close': pre_close,
-                'change': change,
-                'pct_chg': pct_chg
-            })
+            # 计算涨跌幅等指标 - 处理不同的字段名
+            try:
+                open_price = row.get('open', 0)
+                high_price = row.get('high', 0)
+                low_price = row.get('low', 0)
+                close_price = row.get('close', 0)
+                volume = row.get('vol', row.get('volume', 0))
+                amount = row.get('amount', 0)
+                
+                pre_close = row.get('pre_close', open_price)
+                change = close_price - pre_close
+                pct_chg = (change / pre_close * 100) if pre_close > 0 else 0
+                
+                data_list.append({
+                    'ts_code': ts_code,
+                    'datetime': dt,
+                    'period_type': period_type,
+                    'open': open_price,
+                    'high': high_price,
+                    'low': low_price,
+                    'close': close_price,
+                    'volume': volume,
+                    'amount': amount,
+                    'pre_close': pre_close,
+                    'change': change,
+                    'pct_chg': pct_chg
+                })
+            except Exception as e:
+                logger.warning(f"处理数据行失败: {e}, 跳过该行")
         
         return data_list
     
