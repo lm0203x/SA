@@ -12,7 +12,7 @@ def check_ml_tables():
         host='localhost',
         user='root', 
         password='Flameaway3.',
-        database='stock_cursor',
+        database='stock',
         charset='utf8mb4'
     )
 

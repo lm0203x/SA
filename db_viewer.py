@@ -13,7 +13,7 @@ class DatabaseViewer:
     """数据库查看器"""
     
     def __init__(self, host='localhost', user='root', password='root', 
-                 database='stock_cursor', charset='utf8mb4'):
+                 database='stock', charset='utf8mb4'):
         """初始化数据库连接"""
         self.host = host
         self.user = user

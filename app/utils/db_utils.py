@@ -23,7 +23,7 @@ class DatabaseUtils:
     _mysql_charset = Config.DB_CHARSET
 
     # Tushare API token
-    _tushare_token = '0f5df633752254f28597cf54c3e1d3d662400e110cba5fa7edd99c6d'
+    _tushare_token = "bfe36db26e94429ae44f0a6e740a2b0835e678a22db812374eec1178"
 
     @classmethod
     def init_tushare_api(cls):

@@ -34,7 +34,7 @@ if not exist ".env" (
         echo DB_HOST=localhost
         echo DB_USER=root
         echo DB_PASSWORD=root
-        echo DB_NAME=stock_cursor
+        echo DB_NAME=stock
         echo DB_CHARSET=utf8mb4
         echo.
         echo # Flask配置

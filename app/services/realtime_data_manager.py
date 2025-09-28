@@ -12,7 +12,7 @@ import logging
 from app.models.stock_minute_data import StockMinuteData
 from app.extensions import db
 from app.services.minute_data_sync_service import MinuteDataSyncService
-
+import os 
 # 可选导入tushare
 try:
     import tushare as ts
@@ -36,9 +36,13 @@ class RealtimeDataManager:
         Args:
             tushare_token: Tushare API token
         """
+        # 如果外部没有传入token，则尝试从环境变量中获取
+        if tushare_token is None:
+            tushare_token = os.getenv('TUSHARE_TOKEN')
+
         self.tushare_token = tushare_token
-        if tushare_token and TUSHARE_AVAILABLE:
-            ts.set_token(tushare_token)
+        if self.tushare_token and TUSHARE_AVAILABLE:
+            ts.set_token(self.tushare_token)
             self.pro = ts.pro_api()
         else:
             self.pro = None
@@ -47,11 +51,11 @@ class RealtimeDataManager:
             else:
                 logger.warning("未设置Tushare token，将使用Baostock数据源")
         
-        # 初始化分钟数据同步服务
+                # 初始化分钟数据同步服务
         self.minute_sync_service = MinuteDataSyncService()
     
     def sync_minute_data(self, ts_code: str, start_date: str = None, end_date: str = None, 
-                        period_type: str = '1min', use_baostock: bool = True) -> Dict:
+                        period_type: str = '1min', use_baostock: bool = False) -> Dict: # <--- 修改点 1
         """
         同步分钟级数据
         
@@ -248,90 +252,24 @@ class RealtimeDataManager:
     
     def _fetch_minute_data_from_source(self, ts_code: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
-        从数据源获取分钟数据（模拟实现）
-        实际使用时应该替换为真实的数据源API调用
+        从数据源获取分钟数据
         """
         try:
-            # 这里使用模拟数据，实际应该调用真实API
-            # 例如: self.pro.stk_mins(ts_code=ts_code, start_date=start_date, end_date=end_date)
-            
-            # 生成模拟的分钟数据
-            start_dt = datetime.strptime(start_date, '%Y%m%d')
-            end_dt = datetime.strptime(end_date, '%Y%m%d')
-            
-            # 生成交易时间范围内的分钟数据
-            data_list = []
-            current_dt = start_dt
-            base_price = 10.0  # 基础价格
-            
-            while current_dt <= end_dt:
-                # 只在交易时间生成数据 (9:30-11:30, 13:00-15:00)
-                if current_dt.weekday() < 5:  # 工作日
-                    # 上午时段
-                    for hour in range(9, 12):
-                        start_minute = 30 if hour == 9 else 0
-                        end_minute = 30 if hour == 11 else 60
-                        
-                        for minute in range(start_minute, end_minute):
-                            dt = current_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                            
-                            # 生成模拟价格数据
-                            price_change = np.random.normal(0, 0.01)  # 随机价格变动
-                            open_price = base_price * (1 + price_change)
-                            high_price = open_price * (1 + abs(np.random.normal(0, 0.005)))
-                            low_price = open_price * (1 - abs(np.random.normal(0, 0.005)))
-                            close_price = open_price + np.random.normal(0, 0.005)
-                            volume = np.random.randint(1000, 10000)
-                            amount = volume * close_price
-                            
-                            data_list.append({
-                                'trade_date': dt.strftime('%Y%m%d'),
-                                'trade_time': dt.strftime('%H%M'),
-                                'open': round(open_price, 2),
-                                'high': round(high_price, 2),
-                                'low': round(low_price, 2),
-                                'close': round(close_price, 2),
-                                'vol': volume,
-                                'amount': round(amount, 2)
-                            })
-                            
-                            base_price = close_price  # 更新基础价格
-                    
-                    # 下午时段
-                    for hour in range(13, 15):
-                        for minute in range(0, 60):
-                            dt = current_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                            
-                            # 生成模拟价格数据
-                            price_change = np.random.normal(0, 0.01)
-                            open_price = base_price * (1 + price_change)
-                            high_price = open_price * (1 + abs(np.random.normal(0, 0.005)))
-                            low_price = open_price * (1 - abs(np.random.normal(0, 0.005)))
-                            close_price = open_price + np.random.normal(0, 0.005)
-                            volume = np.random.randint(1000, 10000)
-                            amount = volume * close_price
-                            
-                            data_list.append({
-                                'trade_date': dt.strftime('%Y%m%d'),
-                                'trade_time': dt.strftime('%H%M'),
-                                'open': round(open_price, 2),
-                                'high': round(high_price, 2),
-                                'low': round(low_price, 2),
-                                'close': round(close_price, 2),
-                                'vol': volume,
-                                'amount': round(amount, 2)
-                            })
-                            
-                            base_price = close_price
-                
-                current_dt += timedelta(days=1)
-            
-            return pd.DataFrame(data_list)
-            
+            # 使用真实的Tushare API
+            if self.pro:
+                logger.info(f"正在从Tushare获取 {ts_code} 的分钟数据...")
+                # 注意：Tushare的stk_mins接口可能需要专业版权限，并且有积分限制
+                df = self.pro.stk_mins(ts_code=ts_code, start_date=start_date, end_date=end_date, freq='1min')
+                logger.info(f"成功从Tushare获取 {len(df)} 条数据")
+                return df
+            else:
+                logger.warning("Tushare Pro API未初始化，无法获取真实数据。")
+                return pd.DataFrame()
+
         except Exception as e:
-            logger.error(f"获取数据源数据失败: {str(e)}")
+            logger.error(f"从Tushare获取数据失败: {str(e)}")
             return pd.DataFrame()
-    
+
     def _convert_to_model_format(self, df: pd.DataFrame, ts_code: str, period_type: str) -> List[Dict]:
         """
         将数据源格式转换为模型格式

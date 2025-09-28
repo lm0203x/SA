@@ -34,8 +34,8 @@ if [ ! -f ".env" ]; then
 # 数据库配置
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=root
-DB_NAME=stock_cursor
+DB_PASSWORD=20050204Ylm
+DB_NAME=stock
 DB_CHARSET=utf8mb4
 
 # Flask配置
@@ -86,12 +86,12 @@ try:
     
     # 检查数据库是否存在
     cursor = conn.cursor()
-    cursor.execute('SHOW DATABASES LIKE \"stock_cursor\"')
+    cursor.execute('SHOW DATABASES LIKE \"stock\"')
     result = cursor.fetchone()
     
     if not result:
         print('📊 创建数据库...')
-        cursor.execute('CREATE DATABASE stock_cursor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
+        cursor.execute('CREATE DATABASE stock CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
         print('✅ 数据库创建成功')
     else:
         print('✅ 数据库连接成功')

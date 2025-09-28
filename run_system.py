@@ -214,7 +214,7 @@ class SystemManager:
                 webbrowser.open(f'http://{host}:{port}/ml-factor')
             
             # 启动服务器
-            self.app.run(host=host, port=port, debug=debug)
+            self.app.run(host=host, port=port, debug=debug, use_reloader=False) # <--- 修改这里
             
         except KeyboardInterrupt:
             print("\n服务器已停止")

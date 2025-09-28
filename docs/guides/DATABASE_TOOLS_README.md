@@ -50,7 +50,7 @@ pip install pymysql pandas numpy
 - 主机: localhost
 - 用户: root
 - 密码: root
-- 数据库: stock_cursor
+- 数据库: stock
 
 如需修改，请在代码中调整连接参数。
 
