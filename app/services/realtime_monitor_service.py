@@ -23,6 +23,23 @@ class RealtimeMonitorService:
     def __init__(self):
         self.sector_mapping = self._initialize_sector_mapping()
     
+    def _get_stocks_with_data(self, period_type: str = '5min', limit: int = 50) -> List[str]:
+        """获取有数据的股票代码列表"""
+        try:
+            # 查询数据库中有数据的股票代码
+            stocks = StockMinuteData.query.filter_by(
+                period_type=period_type
+            ).with_entities(StockMinuteData.ts_code).distinct().limit(limit).all()
+            
+            stock_codes = [stock[0] for stock in stocks]
+            logger.info(f"找到 {len(stock_codes)} 只有{period_type}数据的股票")
+            return stock_codes
+            
+        except Exception as e:
+            logger.error(f"获取股票列表失败: {e}")
+            # 返回默认股票列表
+            return ['000001.SZ', '000002.SZ', '600519.SH', '000858.SZ']
+    
     def _initialize_sector_mapping(self):
         """初始化板块映射"""
         return {
@@ -61,13 +78,18 @@ class RealtimeMonitorService:
                            period_type: str = '1min', limit: int = 50) -> Dict:
         """获取实时行情数据"""
         try:
-            # 如果没有指定股票代码，获取活跃股票
+            # 如果没有指定股票代码，获取所有有数据的股票
             if not stock_codes:
-                stock_codes = self._get_active_stocks(limit)
+                stock_codes = self._get_stocks_with_data(period_type, limit)
+            
+            # 如果指定的周期没有数据，尝试使用5分钟数据
+            if not stock_codes and period_type == '1min':
+                period_type = '5min'
+                stock_codes = self._get_stocks_with_data(period_type, limit)
             
             # 获取最新价格数据
             end_time = datetime.now()
-            start_time = end_time - timedelta(hours=1)  # 最近1小时
+            start_time = end_time - timedelta(days=7)  # 扩大查询范围到最近7天
             
             quotes = []
             for ts_code in stock_codes:
@@ -96,14 +118,14 @@ class RealtimeMonitorService:
                     quotes.append({
                         'ts_code': ts_code,
                         'name': self._get_stock_name(ts_code),
-                        'current_price': latest_data.close,
-                        'open_price': latest_data.open,
-                        'high_price': latest_data.high,
-                        'low_price': latest_data.low,
-                        'volume': latest_data.volume,
-                        'amount': latest_data.amount,
-                        'change_pct': change_pct,
-                        'volume_ratio': volume_ratio,
+                        'current_price': float(latest_data.close) if latest_data.close else 0.0,
+                        'open_price': float(latest_data.open) if latest_data.open else 0.0,
+                        'high_price': float(latest_data.high) if latest_data.high else 0.0,
+                        'low_price': float(latest_data.low) if latest_data.low else 0.0,
+                        'volume': int(latest_data.volume) if latest_data.volume else 0,
+                        'amount': float(latest_data.amount) if latest_data.amount else 0.0,
+                        'change_pct': float(change_pct) if change_pct else 0.0,
+                        'volume_ratio': float(volume_ratio) if volume_ratio else 1.0,
                         'update_time': latest_data.datetime.isoformat(),
                         'turnover_rate': self._calculate_turnover_rate(ts_code, latest_data.volume)
                     })
@@ -420,8 +442,8 @@ class RealtimeMonitorService:
                 func.date(StockMinuteData.datetime) == today
             ).count()
             
-            # 获取活跃股票数（最近1小时有数据）
-            recent_time = datetime.now() - timedelta(hours=1)
+            # 获取活跃股票数（最近24小时有数据，因为可能是历史数据）
+            recent_time = datetime.now() - timedelta(hours=24)
             active_stocks = StockMinuteData.query.filter(
                 StockMinuteData.datetime >= recent_time
             ).with_entities(
@@ -575,12 +597,37 @@ class RealtimeMonitorService:
             logger.error(f"计算异动评分失败: {str(e)}")
             return 0.0
     
-    def _calculate_data_delay(self, latest_time: datetime) -> int:
-        """计算数据延迟（分钟）"""
+    def _calculate_data_delay(self, latest_time: datetime) -> str:
+        """计算数据延迟"""
+        if not latest_time:
+            return "无数据"
+        
+        delay = datetime.now() - latest_time
+        
+        if delay.days > 0:
+            return f"{delay.days}天前"
+        elif delay.seconds > 3600:
+            hours = delay.seconds // 3600
+            return f"{hours}小时前"
+        elif delay.seconds > 60:
+            minutes = delay.seconds // 60
+            return f"{minutes}分钟前"
+        else:
+            return "实时"
+    
+    def _get_stock_name(self, ts_code: str) -> str:
+        """获取股票名称"""
         try:
-            now = datetime.now()
-            delay = (now - latest_time).total_seconds() / 60
-            return int(delay)
-        except Exception as e:
-            logger.error(f"计算数据延迟失败: {str(e)}")
-            return 0 
+            stock = StockBasic.query.filter_by(ts_code=ts_code).first()
+            return stock.name if stock else ts_code
+        except Exception:
+            return ts_code
+    
+    def _calculate_turnover_rate(self, ts_code: str, volume: int) -> float:
+        """计算换手率"""
+        try:
+            # 简化处理，返回一个估算值
+            # 实际应该从股票基本信息中获取流通股本
+            return round(volume / 1000000, 2) if volume else 0.0
+        except Exception:
+            return 0.0

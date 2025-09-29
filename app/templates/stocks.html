@@ -56,7 +56,7 @@
                     <div id="stocks-container">
                         <!-- 股票列表将在这里动态加载 -->
                     </div>
-                    
+
                     <!-- 分页 -->
                     <nav aria-label="股票列表分页" class="mt-4">
                         <ul class="pagination justify-content-center" id="pagination">
@@ -72,90 +72,90 @@
 
 {% block extra_js %}
 <script>
-let currentPage = 1;
-let currentFilters = {};
+    let currentPage = 1;
+    let currentFilters = {};
 
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
-    loadIndustries();
-    loadAreas();
-    loadStocks();
-    
-    // 绑定事件
-    document.getElementById('filter-form').addEventListener('submit', handleFilter);
-    document.getElementById('reset-btn').addEventListener('click', resetFilters);
-});
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        loadIndustries();
+        loadAreas();
+        loadStocks();
 
-// 加载行业列表
-async function loadIndustries() {
-    try {
-        const response = await apiRequest('/industries');
-        if (response.code === 200) {
-            const select = document.getElementById('industry-select');
-            response.data.forEach(industry => {
-                const option = document.createElement('option');
-                option.value = industry;
-                option.textContent = industry;
-                select.appendChild(option);
+        // 绑定事件
+        document.getElementById('filter-form').addEventListener('submit', handleFilter);
+        document.getElementById('reset-btn').addEventListener('click', resetFilters);
+    });
+
+    // 加载行业列表
+    async function loadIndustries() {
+        try {
+            const response = await apiRequest('/industries');
+            if (response.code === 200) {
+                const select = document.getElementById('industry-select');
+                response.data.forEach(industry => {
+                    const option = document.createElement('option');
+                    option.value = industry;
+                    option.textContent = industry;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('加载行业列表失败:', error);
+        }
+    }
+
+    // 加载地域列表
+    async function loadAreas() {
+        try {
+            const response = await apiRequest('/areas');
+            if (response.code === 200) {
+                const select = document.getElementById('area-select');
+                response.data.forEach(area => {
+                    const option = document.createElement('option');
+                    option.value = area;
+                    option.textContent = area;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('加载地域列表失败:', error);
+        }
+    }
+
+    // 加载股票列表
+    async function loadStocks(page = 1) {
+        showLoading('stocks-container');
+
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                page_size: 20,
+                ...currentFilters
             });
-        }
-    } catch (error) {
-        console.error('加载行业列表失败:', error);
-    }
-}
 
-// 加载地域列表
-async function loadAreas() {
-    try {
-        const response = await apiRequest('/areas');
-        if (response.code === 200) {
-            const select = document.getElementById('area-select');
-            response.data.forEach(area => {
-                const option = document.createElement('option');
-                option.value = area;
-                option.textContent = area;
-                select.appendChild(option);
-            });
+            const response = await apiRequest(`/stocks?${params}`);
+            if (response.code === 200) {
+                renderStocks(response.data.stocks);
+                renderPagination(response.data);
+                document.getElementById('total-count').textContent = response.data.total;
+                currentPage = page;
+            }
+        } catch (error) {
+            showError('stocks-container', '加载股票列表失败');
+            console.error('加载股票列表失败:', error);
         }
-    } catch (error) {
-        console.error('加载地域列表失败:', error);
     }
-}
 
-// 加载股票列表
-async function loadStocks(page = 1) {
-    showLoading('stocks-container');
-    
-    try {
-        const params = new URLSearchParams({
-            page: page,
-            page_size: 20,
-            ...currentFilters
-        });
-        
-        const response = await apiRequest(`/stocks?${params}`);
-        if (response.code === 200) {
-            renderStocks(response.data.stocks);
-            renderPagination(response.data);
-            document.getElementById('total-count').textContent = response.data.total;
-            currentPage = page;
+    // 渲染股票列表
+    function renderStocks(stocks) {
+        const container = document.getElementById('stocks-container');
+
+        if (stocks.length === 0) {
+            container.innerHTML = '<div class="text-center py-4"><p class="text-muted">暂无数据</p></div>';
+            return;
         }
-    } catch (error) {
-        showError('stocks-container', '加载股票列表失败');
-        console.error('加载股票列表失败:', error);
-    }
-}
 
-// 渲染股票列表
-function renderStocks(stocks) {
-    const container = document.getElementById('stocks-container');
-    
-    if (stocks.length === 0) {
-        container.innerHTML = '<div class="text-center py-4"><p class="text-muted">暂无数据</p></div>';
-        return;
-    }
-    
-    const html = `
+        const html = `
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -171,7 +171,7 @@ function renderStocks(stocks) {
                 <tbody>
                     ${stocks.map(stock => `
                         <tr>
-                            <td><code>${stock.symbol}</code></td>
+                            <td><code>${stock.ts_code}</code></td>
                             <td><strong>${stock.name}</strong></td>
                             <td><span class="badge bg-secondary">${stock.industry || '--'}</span></td>
                             <td>${stock.area || '--'}</td>
@@ -185,75 +185,78 @@ function renderStocks(stocks) {
             </table>
         </div>
     `;
-    
-    container.innerHTML = html;
-}
 
-// 渲染分页
-function renderPagination(data) {
-    const pagination = document.getElementById('pagination');
-    const { page, total_pages } = data;
-    
-    if (total_pages <= 1) {
-        pagination.innerHTML = '';
-        return;
+        container.innerHTML = html;
     }
-    
-    let html = '';
-    
-    // 上一页
-    html += `
+
+    // 渲染分页
+    function renderPagination(data) {
+        const pagination = document.getElementById('pagination');
+        const {
+            page,
+            total_pages
+        } = data;
+
+        if (total_pages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // 上一页
+        html += `
         <li class="page-item ${page <= 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="loadStocks(${page - 1}); return false;">上一页</a>
         </li>
     `;
-    
-    // 页码
-    const startPage = Math.max(1, page - 2);
-    const endPage = Math.min(total_pages, page + 2);
-    
-    for (let i = startPage; i <= endPage; i++) {
-        html += `
+
+        // 页码
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(total_pages, page + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `
             <li class="page-item ${i === page ? 'active' : ''}">
                 <a class="page-link" href="#" onclick="loadStocks(${i}); return false;">${i}</a>
             </li>
         `;
-    }
-    
-    // 下一页
-    html += `
+        }
+
+        // 下一页
+        html += `
         <li class="page-item ${page >= total_pages ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="loadStocks(${page + 1}); return false;">下一页</a>
         </li>
     `;
-    
-    pagination.innerHTML = html;
-}
 
-// 处理筛选
-function handleFilter(event) {
-    event.preventDefault();
-    
-    currentFilters = {};
-    
-    const industry = document.getElementById('industry-select').value;
-    const area = document.getElementById('area-select').value;
-    const search = document.getElementById('search-input').value;
-    
-    if (industry) currentFilters.industry = industry;
-    if (area) currentFilters.area = area;
-    if (search) currentFilters.search = search;
-    
-    loadStocks(1);
-}
+        pagination.innerHTML = html;
+    }
 
-// 重置筛选
-function resetFilters() {
-    document.getElementById('industry-select').value = '';
-    document.getElementById('area-select').value = '';
-    document.getElementById('search-input').value = '';
-    currentFilters = {};
-    loadStocks(1);
-}
+    // 处理筛选
+    function handleFilter(event) {
+        event.preventDefault();
+
+        currentFilters = {};
+
+        const industry = document.getElementById('industry-select').value;
+        const area = document.getElementById('area-select').value;
+        const search = document.getElementById('search-input').value;
+
+        if (industry) currentFilters.industry = industry;
+        if (area) currentFilters.area = area;
+        if (search) currentFilters.search = search;
+
+        loadStocks(1);
+    }
+
+    // 重置筛选
+    function resetFilters() {
+        document.getElementById('industry-select').value = '';
+        document.getElementById('area-select').value = '';
+        document.getElementById('search-input').value = '';
+        currentFilters = {};
+        loadStocks(1);
+    }
 </script>
-{% endblock %} 
+{% endblock %}

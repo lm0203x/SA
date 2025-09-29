@@ -6,6 +6,7 @@ from .stock_ma_data import StockMaData
 from .stock_moneyflow import StockMoneyflow
 from .stock_cyq_perf import StockCyqPerf
 from .stock_business import StockBusiness
+from .stock_minute_data import StockMinuteData
 from .factor_definition import FactorDefinition
 from .factor_values import FactorValues
 from .ml_model_definition import MLModelDefinition
@@ -23,6 +24,7 @@ __all__ = [
     'StockMoneyflow',
     'StockCyqPerf',
     'StockBusiness',
+    'StockMinuteData',
     'FactorDefinition',
     'FactorValues',
     'MLModelDefinition',

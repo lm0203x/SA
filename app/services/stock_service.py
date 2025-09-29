@@ -17,8 +17,9 @@ class StockService:
     @staticmethod
     @cached(expire=1800, key_prefix='stock_basic')
     def get_stock_list(industry=None, area=None, page=1, page_size=20):
-        """获取股票列表"""
+        """获取股票列表 - 优先显示有数据的股票"""
         try:
+            # 首先尝试从stock_basic表获取
             query = StockBasic.query
             
             # 添加筛选条件
@@ -32,13 +33,57 @@ class StockService:
             stocks = query.offset(offset).limit(page_size).all()
             total = query.count()
             
+            # 如果stock_basic表有数据，直接返回
+            if stocks:
+                return {
+                    'stocks': [stock.to_dict() for stock in stocks],
+                    'total': total,
+                    'page': page,
+                    'page_size': page_size,
+                    'total_pages': (total + page_size - 1) // page_size
+                }
+            
+            # 如果stock_basic表没有数据，从stock_minute_data表获取有数据的股票
+            logger.info("stock_basic表无数据，从stock_minute_data表获取股票列表")
+            from app.models.stock_minute_data import StockMinuteData
+            
+            # 获取有分钟级数据的股票代码
+            minute_stocks = db.session.query(StockMinuteData.ts_code).distinct().offset(offset).limit(page_size).all()
+            total_minute_stocks = db.session.query(StockMinuteData.ts_code).distinct().count()
+            
+            # 构造股票信息
+            stocks_data = []
+            for stock_tuple in minute_stocks:
+                ts_code = stock_tuple[0]
+                
+                # 获取最新价格信息
+                latest_data = StockMinuteData.query.filter_by(ts_code=ts_code).order_by(
+                    StockMinuteData.datetime.desc()
+                ).first()
+                
+                stocks_data.append({
+                    'ts_code': ts_code,
+                    'name': ts_code,  # 暂时使用代码作为名称
+                    'industry': '未知',
+                    'area': '未知',
+                    'market': 'SZ' if ts_code.endswith('.SZ') else 'SH',
+                    'list_date': None,
+                    'current_price': latest_data.close if latest_data else None,
+                    'change_pct': latest_data.pct_chg if latest_data else None,
+                    'volume': latest_data.volume if latest_data else None,
+                    'amount': latest_data.amount if latest_data else None,
+                    'update_time': latest_data.datetime.isoformat() if latest_data else None,
+                    'data_source': 'minute_data'  # 标记数据来源
+                })
+            
             return {
-                'stocks': [stock.to_dict() for stock in stocks],
-                'total': total,
+                'stocks': stocks_data,
+                'total': total_minute_stocks,
                 'page': page,
                 'page_size': page_size,
-                'total_pages': (total + page_size - 1) // page_size
+                'total_pages': (total_minute_stocks + page_size - 1) // page_size
             }
+            
         except Exception as e:
             logger.error(f"获取股票列表失败: {e}")
             return {'stocks': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
@@ -48,8 +93,44 @@ class StockService:
     def get_stock_info(ts_code: str):
         """获取股票基本信息"""
         try:
+            # 首先尝试从stock_basic表获取
             stock = StockBasic.query.filter_by(ts_code=ts_code).first()
-            return stock.to_dict() if stock else None
+            if stock:
+                return stock.to_dict()
+            
+            # 如果stock_basic表没有数据，从stock_minute_data表构造基本信息
+            logger.info(f"stock_basic表无{ts_code}数据，从stock_minute_data表构造基本信息")
+            from app.models.stock_minute_data import StockMinuteData
+            
+            # 检查是否有分钟级数据
+            minute_data = StockMinuteData.query.filter_by(ts_code=ts_code).first()
+            if not minute_data:
+                return None
+            
+            # 获取最新价格信息
+            latest_data = StockMinuteData.query.filter_by(ts_code=ts_code).order_by(
+                StockMinuteData.datetime.desc()
+            ).first()
+            
+            # 构造股票基本信息
+            stock_info = {
+                'ts_code': ts_code,
+                'symbol': ts_code.split('.')[0],  # 从ts_code提取symbol
+                'name': ts_code,  # 暂时使用代码作为名称
+                'industry': '未知',
+                'area': '未知',
+                'market': 'SZ' if ts_code.endswith('.SZ') else 'SH',
+                'list_date': None,
+                'current_price': latest_data.close if latest_data else None,
+                'change_pct': latest_data.pct_chg if latest_data else None,
+                'volume': latest_data.volume if latest_data else None,
+                'amount': latest_data.amount if latest_data else None,
+                'update_time': latest_data.datetime.isoformat() if latest_data else None,
+                'data_source': 'minute_data'  # 标记数据来源
+            }
+            
+            return stock_info
+            
         except Exception as e:
             logger.error(f"获取股票信息失败: {ts_code}, 错误: {e}")
             return None

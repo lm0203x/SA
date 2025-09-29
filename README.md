@@ -277,6 +277,599 @@ stock_analysis/
 - 性能指标计算
 - 多策略比较
 
+## 📊 数据源接入架构详解
+
+### 数据源层次结构
+```
+数据获取层
+├── Tushare Pro API (付费，高质量)
+│   ├── 日线数据 (免费)
+│   ├── 分钟线数据 (需要权限)
+│   └── 基本面数据 (部分免费)
+├── Baostock API (免费，开源)
+│   ├── 日线数据 ✅
+│   ├── 5分钟线数据 ✅
+│   └── 基本面数据 ✅
+└── 本地数据库缓存
+    ├── MySQL/SQLite存储
+    └── Redis缓存加速
+```
+
+### 核心数据管理器
+
+#### 1. RealtimeDataManager (实时数据管理器)
+**文件位置**: `app/services/realtime_data_manager.py`
+
+**主要功能**:
+- 统一管理多个数据源
+- 分钟级数据同步和聚合
+- 数据质量监控
+- 实时价格获取
+
+**数据源切换逻辑**:
+```python
+def sync_minute_data(self, ts_code, start_date, end_date, period_type, use_baostock=False):
+    if use_baostock:
+        # 使用Baostock免费数据源
+        with self.minute_sync_service as sync_service:
+            result = sync_service.sync_single_stock_data(ts_code, period_type, start_date, end_date)
+    else:
+        # 使用Tushare Pro API (需要token和权限)
+        return self._sync_minute_data_legacy(ts_code, start_date, end_date, period_type)
+```
+
+**数据处理流程**:
+1. **数据获取** → 从API获取原始数据
+2. **格式转换** → 统一数据格式 (`_convert_to_model_format`)
+3. **数据验证** → 检查数据完整性
+4. **批量入库** → 使用 `StockMinuteData.bulk_insert()`
+5. **数据聚合** → 生成5min、15min、30min、60min周期数据
+
+#### 2. MinuteDataSyncService (分钟数据同步服务)
+**文件位置**: `app/services/minute_data_sync_service.py`
+
+**Baostock集成逻辑**:
+```python
+class MinuteDataSyncService:
+    PERIOD_TYPES = {
+        '1min': '1',    # 注意：Baostock不支持1分钟，会转为5分钟
+        '5min': '5', 
+        '15min': '15',
+        '30min': '30',
+        '60min': '60'
+    }
+    
+    def get_stock_minute_data_bs(self, stock_code, start_date, end_date, period_type):
+        # 1. 登录Baostock
+        bs.login()
+        
+        # 2. 转换股票代码格式 (000001.SZ → sz.000001)
+        bs_code = self.convert_ts_code_to_bs_code(stock_code)
+        
+        # 3. 调用Baostock API
+        rs = bs.query_history_k_data_plus(
+            bs_code, 
+            "date,time,code,open,high,low,close,volume,amount",
+            start_date=start_date, 
+            end_date=end_date,
+            frequency=frequency,  # 分钟级别
+            adjustflag="3"        # 不复权
+        )
+        
+        # 4. 数据清洗和转换
+        return self._process_baostock_data(rs)
+```
+
+#### 3. StockService (股票基础服务)
+**文件位置**: `app/services/stock_service.py`
+
+**缓存策略**:
+```python
+@cached(expire=1800, key_prefix='stock_basic')  # 30分钟缓存
+def get_stock_list(industry=None, area=None, page=1, page_size=20):
+    # 从数据库获取股票列表，支持行业、地区筛选
+
+@cached(expire=300, key_prefix='daily_history')  # 5分钟缓存
+def get_daily_history(ts_code, start_date=None, end_date=None, limit=60):
+    # 获取日线历史数据，按日期倒序
+```
+
+### 数据模型设计
+
+#### StockMinuteData (分钟数据模型)
+```python
+class StockMinuteData(db.Model):
+    ts_code = db.Column(db.String(10))      # 股票代码
+    datetime = db.Column(db.DateTime)       # 时间戳
+    period_type = db.Column(db.String(10))  # 周期类型
+    open = db.Column(db.Float)              # 开盘价
+    high = db.Column(db.Float)              # 最高价
+    low = db.Column(db.Float)               # 最低价
+    close = db.Column(db.Float)             # 收盘价
+    volume = db.Column(db.BigInteger)       # 成交量
+    amount = db.Column(db.Float)            # 成交额
+    pre_close = db.Column(db.Float)         # 前收盘价
+    change = db.Column(db.Float)            # 涨跌额
+    pct_chg = db.Column(db.Float)           # 涨跌幅%
+```
+
+### API接口层
+
+#### 实时分析API (`/api/realtime-analysis/`)
+```python
+# 数据同步接口
+POST /api/realtime-analysis/data/sync
+{
+    "ts_code": "000001.SZ",
+    "start_date": "2025-09-21", 
+    "end_date": "2025-09-28",
+    "period_type": "5min",
+    "use_baostock": true  # 选择数据源
+}
+
+# 批量同步接口
+POST /api/realtime-analysis/data/sync-multiple
+{
+    "stock_list": ["000001.SZ", "000002.SZ"],
+    "period_type": "5min",
+    "batch_size": 10,
+    "use_baostock": true
+}
+
+# 数据质量检查
+GET /api/realtime-analysis/data/quality?ts_code=000001.SZ&period_type=5min
+
+# 获取实时价格
+GET /api/realtime-analysis/data/price?ts_code=000001.SZ
+```
+
+### 数据源配置
+
+#### 1. Tushare Pro配置
+```python
+# 环境变量配置
+TUSHARE_TOKEN = "your_tushare_token_here"
+
+# 或在config.py中配置
+class Config:
+    TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN')
+    
+# 使用方式
+data_manager = RealtimeDataManager(tushare_token="your_token")
+result = data_manager.sync_minute_data("000001.SZ", use_baostock=False)
+```
+
+#### 2. Baostock配置 (推荐)
+```python
+# 无需token，直接使用
+data_manager = RealtimeDataManager()
+result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
+
+# 批量同步示例
+stock_list = ["000001.SZ", "000002.SZ", "600519.SH"]
+result = data_manager.sync_multiple_stocks_data(
+    stock_list=stock_list,
+    period_type="5min",
+    use_baostock=True,
+    batch_size=10
+)
+```
+
+### 数据源对比
+
+| 特性 | Tushare Pro | Baostock | 本地数据库 |
+|------|-------------|----------|------------|
+| **费用** | 付费(分钟线需权限) | 完全免费 | 无额外费用 |
+| **数据质量** | 高质量，实时性好 | 质量良好，有延迟 | 取决于数据源 |
+| **访问限制** | 有积分和频率限制 | 无严格限制 | 无限制 |
+| **支持周期** | 1min, 5min, 15min等 | 5min, 15min, 30min, 60min | 全支持 |
+| **历史数据** | 丰富(2005年至今) | 较丰富(1990年至今) | 取决于同步情况 |
+| **实时性** | 准实时(延迟<1分钟) | 日终数据(T+1) | 取决于更新频率 |
+| **股票覆盖** | A股全覆盖 | A股全覆盖 | 取决于同步范围 |
+
+### 推荐使用方案
+
+#### 方案一：纯Baostock (推荐新手)
+```python
+# 优点：免费、稳定、数据质量好
+# 缺点：无实时数据、只有日终数据
+
+# 配置
+USE_BAOSTOCK_ONLY = True
+
+# 使用
+result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
+```
+
+#### 方案二：Tushare Pro + Baostock (推荐生产)
+```python
+# 优点：数据质量最高、实时性好
+# 缺点：需要付费、有访问限制
+
+# 配置
+TUSHARE_TOKEN = "your_premium_token"
+FALLBACK_TO_BAOSTOCK = True
+
+# 使用 (自动降级)
+try:
+    result = data_manager.sync_minute_data("000001.SZ", use_baostock=False)
+except Exception:
+    result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
+```
+
+#### 方案三：混合模式 (推荐开发)
+```python
+# 历史数据用Baostock，实时数据用Tushare
+def hybrid_sync_strategy(ts_code, start_date, end_date):
+    # 1. 历史数据用Baostock (免费、稳定)
+    if start_date < "2025-01-01":
+        return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=True)
+    
+    # 2. 近期数据用Tushare (实时性好)
+    else:
+        try:
+            return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=False)
+        except Exception:
+            return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=True)
+```
+
+### 数据同步策略
+
+#### 1. 增量同步
+```python
+def sync_incremental_data(self, ts_code):
+    # 1. 获取数据库中最新数据时间
+    latest_time = StockMinuteData.get_latest_time(ts_code)
+    
+    # 2. 从最新时间开始同步到当前时间
+    start_date = latest_time.strftime('%Y-%m-%d') if latest_time else '2025-01-01'
+    end_date = datetime.now().strftime('%Y-%m-%d')
+    
+    # 3. 调用数据源API
+    return self.sync_minute_data(ts_code, start_date, end_date)
+```
+
+#### 2. 数据聚合策略
+```python
+def aggregate_data(self, ts_code, source_period='1min', target_period='5min'):
+    # 1. 获取源周期数据
+    source_data = StockMinuteData.get_data_by_time_range(ts_code, start_date, end_date, source_period)
+    
+    # 2. 使用pandas进行时间序列聚合
+    df = pd.DataFrame([data.to_dict() for data in source_data])
+    df.set_index('datetime', inplace=True)
+    
+    # 3. 按目标周期聚合 (OHLCV)
+    agg_data = df.resample('5T').agg({
+        'open': 'first',   # 开盘价取第一个
+        'high': 'max',     # 最高价取最大值
+        'low': 'min',      # 最低价取最小值
+        'close': 'last',   # 收盘价取最后一个
+        'volume': 'sum',   # 成交量求和
+        'amount': 'sum'    # 成交额求和
+    })
+    
+    # 4. 计算技术指标
+    agg_data['pct_chg'] = (agg_data['close'] / agg_data['close'].shift(1) - 1) * 100
+    
+    # 5. 批量入库
+    StockMinuteData.bulk_insert(aggregated_list)
+```
+
+### 错误处理和容错机制
+
+#### 1. 数据源切换
+```python
+def _fetch_minute_data_from_source(self, ts_code, start_date, end_date):
+    try:
+        # 优先使用Tushare Pro
+        if self.pro:
+            df = self.pro.stk_mins(ts_code=ts_code, start_date=start_date, end_date=end_date)
+            return df
+    except Exception as e:
+        logger.warning(f"Tushare获取失败: {e}, 切换到Baostock")
+        
+        # 降级到Baostock
+        try:
+            with self.minute_sync_service as sync_service:
+                return sync_service.get_stock_minute_data_bs(ts_code, start_date, end_date)
+        except Exception as e2:
+            logger.error(f"Baostock也获取失败: {e2}")
+            return pd.DataFrame()
+```
+
+#### 2. 数据验证
+```python
+def _convert_to_model_format(self, df, ts_code, period_type):
+    data_list = []
+    for _, row in df.iterrows():
+        try:
+            # 时间字段容错处理
+            if 'trade_date' in row:
+                trade_date = str(row['trade_date'])
+            else:
+                trade_date = datetime.now().strftime('%Y%m%d')
+            
+            # 价格字段容错处理
+            open_price = row.get('open', 0)
+            high_price = row.get('high', 0)
+            low_price = row.get('low', 0)
+            close_price = row.get('close', 0)
+            
+            # 数据有效性检查
+            if close_price <= 0:
+                continue
+                
+            data_list.append({...})
+        except Exception as e:
+            logger.warning(f"处理数据行失败: {e}, 跳过该行")
+    
+    return data_list
+```
+
+### 数据库设计优化
+
+#### 索引策略
+```python
+# 复合索引设计 (stock_minute_data表)
+__table_args__ = (
+    Index('idx_ts_code_datetime_period', 'ts_code', 'datetime', 'period_type'),  # 主查询索引
+    Index('idx_datetime_period', 'datetime', 'period_type'),                     # 时间范围查询
+    Index('idx_ts_code_period', 'ts_code', 'period_type'),                       # 股票周期查询
+)
+```
+
+#### 批量操作实现
+```python
+@classmethod
+def bulk_insert(cls, data_list):
+    """批量插入数据，提高性能"""
+    if not data_list:
+        return 0
+    
+    try:
+        # 使用SQLAlchemy的bulk_insert_mappings提高性能
+        db.session.bulk_insert_mappings(cls, data_list)
+        db.session.commit()
+        return len(data_list)
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"批量插入失败: {e}")
+        return 0
+
+@classmethod 
+def bulk_upsert(cls, data_list):
+    """批量更新插入，处理重复数据"""
+    success_count = 0
+    for data in data_list:
+        try:
+            # 检查是否存在
+            existing = cls.query.filter_by(
+                ts_code=data['ts_code'],
+                datetime=data['datetime'], 
+                period_type=data['period_type']
+            ).first()
+            
+            if existing:
+                # 更新现有记录
+                for key, value in data.items():
+                    setattr(existing, key, value)
+            else:
+                # 插入新记录
+                new_record = cls(**data)
+                db.session.add(new_record)
+            
+            success_count += 1
+        except Exception as e:
+            logger.warning(f"处理数据失败: {e}")
+    
+    db.session.commit()
+    return success_count
+```
+
+### 数据质量监控
+
+#### 数据完整性检查
+```python
+@classmethod
+def check_data_quality(cls, ts_code, period_type='1min', hours=24):
+    """检查数据质量和完整性"""
+    end_time = datetime.now()
+    start_time = end_time - timedelta(hours=hours)
+    
+    # 获取实际数据
+    actual_data = cls.query.filter(
+        cls.ts_code == ts_code,
+        cls.period_type == period_type,
+        cls.datetime >= start_time,
+        cls.datetime <= end_time
+    ).count()
+    
+    # 计算期望数据量 (交易时间: 9:30-11:30, 13:00-15:00)
+    trading_minutes_per_day = 240  # 4小时 * 60分钟
+    expected_data = trading_minutes_per_day * (hours / 24)
+    
+    if period_type == '5min':
+        expected_data = expected_data / 5
+    elif period_type == '15min':
+        expected_data = expected_data / 15
+    # ... 其他周期
+    
+    completeness = (actual_data / expected_data * 100) if expected_data > 0 else 0
+    
+    return {
+        'ts_code': ts_code,
+        'period_type': period_type,
+        'time_range': f'{start_time} - {end_time}',
+        'actual_count': actual_data,
+        'expected_count': int(expected_data),
+        'completeness': round(completeness, 2),
+        'status': 'good' if completeness >= 90 else 'warning' if completeness >= 70 else 'poor'
+    }
+```
+
+### 实时数据处理流程
+
+#### 1. 数据接收和预处理
+```python
+def process_realtime_tick(self, tick_data):
+    """处理实时tick数据"""
+    # 1. 数据验证
+    if not self._validate_tick_data(tick_data):
+        return False
+    
+    # 2. 数据清洗
+    cleaned_data = self._clean_tick_data(tick_data)
+    
+    # 3. 聚合到分钟K线
+    minute_bar = self._aggregate_to_minute_bar(cleaned_data)
+    
+    # 4. 存储到数据库
+    self._store_minute_bar(minute_bar)
+    
+    # 5. 触发实时计算
+    self._trigger_realtime_calculation(minute_bar)
+    
+    return True
+
+def _aggregate_to_minute_bar(self, tick_data):
+    """将tick数据聚合为分钟K线"""
+    current_minute = datetime.now().replace(second=0, microsecond=0)
+    
+    # 获取当前分钟的所有tick
+    minute_ticks = self._get_minute_ticks(tick_data['ts_code'], current_minute)
+    
+    if not minute_ticks:
+        return None
+    
+    # OHLCV聚合
+    return {
+        'ts_code': tick_data['ts_code'],
+        'datetime': current_minute,
+        'period_type': '1min',
+        'open': minute_ticks[0]['price'],      # 第一个tick价格
+        'high': max(t['price'] for t in minute_ticks),
+        'low': min(t['price'] for t in minute_ticks),
+        'close': minute_ticks[-1]['price'],    # 最后一个tick价格
+        'volume': sum(t['volume'] for t in minute_ticks),
+        'amount': sum(t['amount'] for t in minute_ticks)
+    }
+```
+
+#### 2. 多周期数据生成
+```python
+def generate_multi_period_bars(self, minute_bar):
+    """从1分钟K线生成多周期K线"""
+    periods = ['5min', '15min', '30min', '60min']
+    
+    for period in periods:
+        try:
+            # 获取当前周期的时间窗口
+            window_start = self._get_period_window_start(minute_bar['datetime'], period)
+            
+            # 获取窗口内的所有1分钟数据
+            window_data = StockMinuteData.query.filter(
+                StockMinuteData.ts_code == minute_bar['ts_code'],
+                StockMinuteData.datetime >= window_start,
+                StockMinuteData.datetime <= minute_bar['datetime'],
+                StockMinuteData.period_type == '1min'
+            ).order_by(StockMinuteData.datetime.asc()).all()
+            
+            if not window_data:
+                continue
+            
+            # 聚合计算
+            period_bar = {
+                'ts_code': minute_bar['ts_code'],
+                'datetime': window_start,
+                'period_type': period,
+                'open': window_data[0].open,
+                'high': max(d.high for d in window_data),
+                'low': min(d.low for d in window_data),
+                'close': window_data[-1].close,
+                'volume': sum(d.volume for d in window_data),
+                'amount': sum(d.amount for d in window_data)
+            }
+            
+            # 计算技术指标
+            period_bar['pre_close'] = self._get_previous_close(minute_bar['ts_code'], window_start, period)
+            period_bar['change'] = period_bar['close'] - period_bar['pre_close']
+            period_bar['pct_chg'] = (period_bar['change'] / period_bar['pre_close'] * 100) if period_bar['pre_close'] > 0 else 0
+            
+            # 存储周期K线
+            self._upsert_period_bar(period_bar)
+            
+        except Exception as e:
+            logger.error(f"生成{period}周期数据失败: {e}")
+
+def _get_period_window_start(self, current_time, period):
+    """获取周期窗口开始时间"""
+    if period == '5min':
+        # 5分钟对齐: 9:30, 9:35, 9:40...
+        minute = current_time.minute
+        aligned_minute = (minute // 5) * 5
+        return current_time.replace(minute=aligned_minute, second=0, microsecond=0)
+    elif period == '15min':
+        # 15分钟对齐: 9:30, 9:45, 10:00...
+        minute = current_time.minute
+        aligned_minute = (minute // 15) * 15
+        return current_time.replace(minute=aligned_minute, second=0, microsecond=0)
+    # ... 其他周期类似处理
+```
+
+### 性能优化策略
+
+#### 1. 批量操作
+- 使用 `bulk_insert()` 批量插入数据
+- 分批处理大量股票数据 (batch_size=1000)
+- 使用事务确保数据一致性
+
+#### 2. 缓存机制
+```python
+# Redis缓存配置
+CACHE_CONFIG = {
+    'stock_basic': {'expire': 1800, 'key_prefix': 'stock_basic'},      # 30分钟
+    'daily_history': {'expire': 300, 'key_prefix': 'daily_history'},   # 5分钟
+    'realtime_price': {'expire': 60, 'key_prefix': 'realtime_price'},  # 1分钟
+}
+
+# 缓存装饰器使用
+@cached(expire=300, key_prefix='minute_data')
+def get_latest_minute_data(ts_code, period_type, limit):
+    return StockMinuteData.get_latest_data(ts_code, period_type, limit)
+```
+
+#### 3. 异步处理
+```python
+# 使用Celery进行异步任务处理
+@celery.task
+def sync_stock_data_async(ts_code, start_date, end_date):
+    """异步同步股票数据"""
+    data_manager = RealtimeDataManager()
+    return data_manager.sync_minute_data(ts_code, start_date, end_date)
+
+@celery.task
+def batch_sync_stocks_async(stock_list, period_type):
+    """批量异步同步多只股票"""
+    results = []
+    for ts_code in stock_list:
+        result = sync_stock_data_async.delay(ts_code, None, None)
+        results.append(result)
+    return results
+```
+
+#### 4. 数据库连接池优化
+```python
+# SQLAlchemy连接池配置
+SQLALCHEMY_ENGINE_OPTIONS = {
+    'pool_size': 20,           # 连接池大小
+    'pool_recycle': 3600,      # 连接回收时间
+    'pool_pre_ping': True,     # 连接预检查
+    'max_overflow': 30,        # 最大溢出连接数
+    'pool_timeout': 30         # 获取连接超时时间
+}
+```
+
 ## 📊 内置因子
 
 ### 动量因子
