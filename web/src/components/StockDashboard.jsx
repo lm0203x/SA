@@ -298,7 +298,7 @@ const StockDashboard = () => {
 
         {/* 标签页导航 */}
         <Tabs defaultValue="stocks" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="stocks" className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4" />
               <span>股票行情</span>
@@ -314,6 +314,10 @@ const StockDashboard = () => {
             <TabsTrigger value="datasource" className="flex items-center space-x-2">
               <Database className="w-4 h-4" />
               <span>数据源</span>
+            </TabsTrigger>
+            <TabsTrigger value="webhook" className="flex items-center space-x-2">
+              <Webhook className="w-4 h-4" />
+              <span>Webhook</span>
             </TabsTrigger>
             <TabsTrigger value="strategy" className="flex items-center space-x-2">
               <Brain className="w-4 h-4" />
