@@ -114,3 +114,4 @@ celerybeat.pid
 # Local configuration
 config_local.py
 local_settings.py
+**/node_modules

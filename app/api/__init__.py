@@ -1,5 +1,14 @@
+"""
+API模块初始化
+"""
+
 from flask import Blueprint
 
-api_bp = Blueprint('api', __name__)
+# 创建API蓝图（如果还没有创建的话）
+try:
+    from app.api import api_bp
+except ImportError:
+    api_bp = Blueprint('api', __name__)
 
-from . import stock_api, analysis_api, text2sql_api 
+# 导入路由
+from app.api import datasource_routes, stock_routes, alert_routes

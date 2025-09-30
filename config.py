@@ -28,6 +28,9 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
     
+    # 前后端分离配置
+    ENABLE_LEGACY_TEMPLATES = False  # 是否启用旧的HTML模板路由（设为False以完全使用API模式）
+    
     # Redis配置
     REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
     REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))

@@ -14,6 +14,7 @@ from .ml_predictions import MLPredictions
 from .stock_income_statement import StockIncomeStatement
 from .stock_balance_sheet import StockBalanceSheet
 from .text2sql_metadata import TableMetadata, FieldMetadata, QueryTemplate, QueryHistory, BusinessDictionary
+from .data_source_config import DataSourceConfig
 
 __all__ = [
     'StockBasic',
@@ -35,5 +36,6 @@ __all__ = [
     'FieldMetadata', 
     'QueryTemplate',
     'QueryHistory',
-    'BusinessDictionary'
+    'BusinessDictionary',
+    'DataSourceConfig'
 ] 
