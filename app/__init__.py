@@ -64,9 +64,9 @@ def create_app(config_name='default'):
     from app.api.ml_factor_api import ml_factor_bp
     app.register_blueprint(ml_factor_bp)
     
-    # Text2SQL API
-    from app.api.text2sql_api import text2sql_bp
-    app.register_blueprint(text2sql_bp)
+    # Text2SQL API（已禁用 - 模块不存在）
+    # from app.api.text2sql_api import text2sql_bp
+    # app.register_blueprint(text2sql_bp)
     
     # 测试API
     from app.api.test_api import test_bp

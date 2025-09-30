@@ -21,13 +21,13 @@ class StockDailyHistory(db.Model):
         """转换为字典"""
         return {
             'ts_code': self.ts_code,
-            'trade_date': self.trade_date.isoformat() if self.trade_date else None,
+            'trade_date': self.trade_date.strftime('%Y%m%d') if self.trade_date else None,
             'open': float(self.open) if self.open else None,
             'high': float(self.high) if self.high else None,
             'low': float(self.low) if self.low else None,
             'close': float(self.close) if self.close else None,
             'pre_close': float(self.pre_close) if self.pre_close else None,
-            'change_c': float(self.change_c) if self.change_c else None,
+            'change': float(self.change_c) if self.change_c else None,  # 前端期望的字段名
             'pct_chg': float(self.pct_chg) if self.pct_chg else None,
             'vol': int(self.vol) if self.vol else None,
             'amount': float(self.amount) if self.amount else None

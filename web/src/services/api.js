@@ -118,6 +118,84 @@ export async function getStockDailyData(tsCode, params = {}) {
   return apiRequest(endpoint);
 }
 
+/**
+ * 同步股票列表
+ */
+export async function syncStockList(forceUpdate = false) {
+  return apiRequest('/stocks/sync', {
+    method: 'POST',
+    body: JSON.stringify({ force_update: forceUpdate }),
+  });
+}
+
+/**
+ * 同步股票日线数据
+ */
+export async function syncStockDailyData(tsCode, params = {}) {
+  return apiRequest(`/stocks/${tsCode}/daily/sync`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+// ==================== 自选股API ====================
+
+/**
+ * 获取自选股列表
+ */
+export async function getWatchlist() {
+  return apiRequest('/watchlist');
+}
+
+/**
+ * 添加自选股
+ */
+export async function addToWatchlist(data) {
+  return apiRequest('/watchlist', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 删除自选股
+ */
+export async function removeFromWatchlist(id) {
+  return apiRequest(`/watchlist/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 更新自选股备注
+ */
+export async function updateWatchlist(id, data) {
+  return apiRequest(`/watchlist/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 同步单个自选股数据
+ */
+export async function syncWatchlistStock(id, params = {}) {
+  return apiRequest(`/watchlist/${id}/sync`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+/**
+ * 同步所有自选股数据
+ */
+export async function syncAllWatchlist(params = {}) {
+  return apiRequest('/watchlist/sync-all', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
 // ==================== 预警规则API ====================
 
 /**
@@ -178,6 +256,16 @@ export default {
   getStocks,
   getRealtimeQuotes,
   getStockDailyData,
+  syncStockList,
+  syncStockDailyData,
+  
+  // 自选股
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+  updateWatchlist,
+  syncWatchlistStock,
+  syncAllWatchlist,
   
   // 预警规则
   getAlertRules,

@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook, BarChart3 } from 'lucide-react';
 import DataSourceConfig from '@/components/DataSourceConfig';
+import WatchlistManager from '@/components/WatchlistManager';
+import AlertRules from '@/components/AlertRules';
 
 // 模拟股票数据
 const generateMockStockData = () => {
@@ -295,41 +297,47 @@ const StockDashboard = () => {
         </div>
 
         {/* 标签页导航 */}
-        <Tabs defaultValue="datasource" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="datasource" className="flex items-center space-x-2">
-              <Database className="w-4 h-4" />
-              <span>数据源</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitor" className="flex items-center space-x-2">
-              <Activity className="w-4 h-4" />
-              <span>实时监控</span>
-            </TabsTrigger>
-            <TabsTrigger value="alerts" className="flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4" />
-              <span>预警记录</span>
+        <Tabs defaultValue="stocks" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="stocks" className="flex items-center space-x-2">
+              <BarChart3 className="w-4 h-4" />
+              <span>股票行情</span>
             </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
               <span>预警规则</span>
             </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>预警记录</span>
+            </TabsTrigger>
+            <TabsTrigger value="datasource" className="flex items-center space-x-2">
+              <Database className="w-4 h-4" />
+              <span>数据源</span>
+            </TabsTrigger>
             <TabsTrigger value="strategy" className="flex items-center space-x-2">
               <Brain className="w-4 h-4" />
               <span>策略配置</span>
             </TabsTrigger>
-            <TabsTrigger value="webhook" className="flex items-center space-x-2">
-              <Webhook className="w-4 h-4" />
-              <span>Webhook</span>
-            </TabsTrigger>
           </TabsList>
+
+          {/* 股票行情页面（自选股） */}
+          <TabsContent value="stocks" className="space-y-6">
+            <WatchlistManager />
+          </TabsContent>
+
+          {/* 预警规则页面 */}
+          <TabsContent value="rules" className="space-y-6">
+            <AlertRules />
+          </TabsContent>
 
           {/* 数据源配置页面 */}
           <TabsContent value="datasource" className="space-y-6">
             <DataSourceConfig />
           </TabsContent>
 
-          {/* 实时监控页面 */}
-          <TabsContent value="monitor" className="space-y-6">
+          {/* 实时监控页面（已移除，功能合并到股票行情） */}
+          <TabsContent value="monitor" className="space-y-6" style={{display: 'none'}}>
             {/* 股票卡片网格 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {Object.values(stockData).map((stock) => (
@@ -467,125 +475,7 @@ const StockDashboard = () => {
           {/* 预警规则页面 */}
           <TabsContent value="rules" className="space-y-6">
             {/* 添加新规则 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>创建预警规则</CardTitle>
-                <CardDescription>设置个性化的股票预警条件</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="rule-name">规则名称</Label>
-                    <Input
-                      id="rule-name"
-                      placeholder="输入规则名称"
-                      value={newRule.name}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rule-symbol">股票代码</Label>
-                    <Select value={newRule.symbol} onValueChange={(value) => setNewRule(prev => ({ ...prev, symbol: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择股票" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(stockData).map(symbol => (
-                          <SelectItem key={symbol} value={symbol}>{symbol}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rule-type">规则类型</Label>
-                    <Select value={newRule.rule_type} onValueChange={(value) => setNewRule(prev => ({ ...prev, rule_type: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="price_change">价格变动</SelectItem>
-                        <SelectItem value="volume_spike">成交量异动</SelectItem>
-                        <SelectItem value="price_threshold">价格阈值</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rule-condition">条件</Label>
-                    <Select value={newRule.condition} onValueChange={(value) => setNewRule(prev => ({ ...prev, condition: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="greater_than">大于</SelectItem>
-                        <SelectItem value="less_than">小于</SelectItem>
-                        <SelectItem value="equal_to">等于</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rule-threshold">阈值</Label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="rule-threshold"
-                        placeholder="输入阈值"
-                        value={newRule.threshold}
-                        onChange={(e) => setNewRule(prev => ({ ...prev, threshold: e.target.value }))}
-                      />
-                      <Button onClick={addAlertRule}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* 现有规则列表 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>预警规则列表</CardTitle>
-                <CardDescription>管理您的预警规则</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alertRules.map((rule) => (
-                    <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{rule.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {rule.symbol} - {rule.rule_type === 'price_change' ? '价格变动' : rule.rule_type === 'volume_spike' ? '成交量异动' : '价格阈值'} 
-                          {rule.condition === 'greater_than' ? ' 大于 ' : rule.condition === 'less_than' ? ' 小于 ' : ' 等于 '}
-                          {rule.threshold}
-                          {rule.rule_type === 'price_change' ? '%' : ''}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          创建时间: {new Date(rule.created_at).toLocaleString('zh-CN')}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={rule.enabled ? 'default' : 'secondary'}>
-                          {rule.enabled ? '启用' : '禁用'}
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleRule(rule.id)}
-                        >
-                          {rule.enabled ? '禁用' : '启用'}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteRule(rule.id)}
-                        >
-                          删除
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
 

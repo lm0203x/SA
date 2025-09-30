@@ -15,6 +15,7 @@ from .stock_income_statement import StockIncomeStatement
 from .stock_balance_sheet import StockBalanceSheet
 from .text2sql_metadata import TableMetadata, FieldMetadata, QueryTemplate, QueryHistory, BusinessDictionary
 from .data_source_config import DataSourceConfig
+from .watchlist import Watchlist
 
 __all__ = [
     'StockBasic',
@@ -37,5 +38,6 @@ __all__ = [
     'QueryTemplate',
     'QueryHistory',
     'BusinessDictionary',
-    'DataSourceConfig'
+    'DataSourceConfig',
+    'Watchlist'
 ] 
