@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook } from 'lucide-react';
+import DataSourceConfig from '@/components/DataSourceConfig';
 
 // 模拟股票数据
 const generateMockStockData = () => {
@@ -281,21 +282,25 @@ const StockDashboard = () => {
               <p className="text-gray-600 mt-1">实时监控股票异动，智能预警系统助您把握投资机会</p>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <Activity className="w-3 h-3 mr-1" />
-                演示模式
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Database className="w-3 h-3 mr-1" />
+                API模式
               </Badge>
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">系统运行中</span>
+                <span className="text-sm text-gray-600">前后端已连接</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* 标签页导航 */}
-        <Tabs defaultValue="monitor" className="w-full">
+        <Tabs defaultValue="datasource" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="datasource" className="flex items-center space-x-2">
+              <Database className="w-4 h-4" />
+              <span>数据源</span>
+            </TabsTrigger>
             <TabsTrigger value="monitor" className="flex items-center space-x-2">
               <Activity className="w-4 h-4" />
               <span>实时监控</span>
@@ -308,10 +313,6 @@ const StockDashboard = () => {
               <Settings className="w-4 h-4" />
               <span>预警规则</span>
             </TabsTrigger>
-            <TabsTrigger value="datasource" className="flex items-center space-x-2">
-              <Database className="w-4 h-4" />
-              <span>数据源</span>
-            </TabsTrigger>
             <TabsTrigger value="strategy" className="flex items-center space-x-2">
               <Brain className="w-4 h-4" />
               <span>策略配置</span>
@@ -321,6 +322,11 @@ const StockDashboard = () => {
               <span>Webhook</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* 数据源配置页面 */}
+          <TabsContent value="datasource" className="space-y-6">
+            <DataSourceConfig />
+          </TabsContent>
 
           {/* 实时监控页面 */}
           <TabsContent value="monitor" className="space-y-6">
@@ -582,30 +588,6 @@ const StockDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* 数据源配置页面 */}
-          <TabsContent value="datasource" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>数据源配置</CardTitle>
-                <CardDescription>配置股票数据来源和API设置</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Database className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">数据源配置功能开发中...</h3>
-                  <p className="text-gray-500 mb-4">
-                    将支持Tushare Pro、Yahoo Finance等多种数据源
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>• Tushare Pro API配置</div>
-                    <div>• Yahoo Finance免费数据</div>
-                    <div>• 自定义数据源接入</div>
-                    <div>• 数据源切换和备份</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* 策略配置页面 */}
           <TabsContent value="strategy" className="space-y-6">

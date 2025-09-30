@@ -1,373 +1,327 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Database, Settings, TestTube, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Database, CheckCircle, XCircle, Loader2, Plus, Trash2, Edit } from 'lucide-react';
+import {
+  getDataSources,
+  createDataSource,
+  updateDataSource,
+  deleteDataSource,
+  testDataSourceConnection
+} from '@/services/api';
 
-const DataSourceConfig = () => {
+export default function DataSourceConfig() {
   const [dataSources, setDataSources] = useState([]);
-  const [activeSource, setActiveSource] = useState('yahoo');
-  const [tushareConfig, setTushareConfig] = useState({
-    token: '',
-    enabled: false,
-    test_status: 'untested'
-  });
-  const [yahooConfig, setYahooConfig] = useState({
-    enabled: true,
-    test_status: 'connected'
-  });
-  const [testResults, setTestResults] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [testingId, setTestingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Tushare配置表单
+  const [tushareForm, setTushareForm] = useState({
+    source_name: 'Tushare Pro',
+    token: '',
+  });
+
+  // 加载数据源列表
   useEffect(() => {
-    loadDataSourceConfigs();
+    loadDataSources();
   }, []);
 
-  const loadDataSourceConfigs = async () => {
+  const loadDataSources = async () => {
     try {
-      const response = await fetch('/api/data-sources/config');
-      if (response.ok) {
-        const config = await response.json();
-        setTushareConfig(config.tushare || tushareConfig);
-        setYahooConfig(config.yahoo || yahooConfig);
-        setActiveSource(config.active_source || 'yahoo');
-      }
+      setLoading(true);
+      const response = await getDataSources();
+      setDataSources(response.data || response || []);
+      setMessage({ type: '', text: '' });
     } catch (error) {
-      console.error('Failed to load data source configs:', error);
+      console.error('加载数据源失败:', error);
+      setMessage({ type: 'error', text: `加载失败: ${error.message}` });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveDataSourceConfig = async (sourceType, config) => {
+  // 测试连接
+  const handleTestConnection = async (id) => {
     try {
-      const response = await fetch(`/api/data-sources/${sourceType}/config`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(config),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (sourceType === 'tushare') {
-          setTushareConfig(prev => ({ ...prev, ...result }));
-        } else if (sourceType === 'yahoo') {
-          setYahooConfig(prev => ({ ...prev, ...result }));
-        }
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error(`Failed to save ${sourceType} config:`, error);
-      return false;
-    }
-  };
-
-  const testDataSource = async (sourceType) => {
-    try {
-      setTestResults(prev => ({ ...prev, [sourceType]: 'testing' }));
+      setTestingId(id);
+      setMessage({ type: '', text: '' });
       
-      const response = await fetch(`/api/data-sources/${sourceType}/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(
-          sourceType === 'tushare' ? { token: tushareConfig.token } : {}
-        ),
-      });
-
-      const result = await response.json();
+      const response = await testDataSourceConnection(id);
       
-      if (response.ok && result.success) {
-        setTestResults(prev => ({ ...prev, [sourceType]: 'success' }));
-        if (sourceType === 'tushare') {
-          setTushareConfig(prev => ({ ...prev, test_status: 'connected' }));
-        } else if (sourceType === 'yahoo') {
-          setYahooConfig(prev => ({ ...prev, test_status: 'connected' }));
-        }
+      if (response.status === 'success' || response.success) {
+        setMessage({ type: 'success', text: '✅ 连接测试成功！' });
+        loadDataSources(); // 重新加载以更新状态
       } else {
-        setTestResults(prev => ({ ...prev, [sourceType]: 'failed' }));
-        if (sourceType === 'tushare') {
-          setTushareConfig(prev => ({ ...prev, test_status: 'failed' }));
-        } else if (sourceType === 'yahoo') {
-          setYahooConfig(prev => ({ ...prev, test_status: 'failed' }));
-        }
+        setMessage({ type: 'error', text: `❌ 连接测试失败: ${response.message}` });
       }
     } catch (error) {
-      console.error(`Failed to test ${sourceType}:`, error);
-      setTestResults(prev => ({ ...prev, [sourceType]: 'failed' }));
+      console.error('测试连接失败:', error);
+      setMessage({ type: 'error', text: `❌ 测试失败: ${error.message}` });
+    } finally {
+      setTestingId(null);
     }
   };
 
-  const setActiveDataSource = async (sourceType) => {
+  // 更新数据源（激活/停用）
+  const handleToggleActive = async (dataSource) => {
     try {
-      const response = await fetch('/api/data-sources/active', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ active_source: sourceType }),
+      setMessage({ type: '', text: '' });
+      
+      await updateDataSource(dataSource.id, {
+        is_active: !dataSource.is_active,
+        is_default: !dataSource.is_active, // 激活时设为默认
       });
-
-      if (response.ok) {
-        setActiveSource(sourceType);
-      }
+      
+      setMessage({ 
+        type: 'success', 
+        text: `✅ 数据源已${!dataSource.is_active ? '激活' : '停用'}` 
+      });
+      loadDataSources();
     } catch (error) {
-      console.error('Failed to set active data source:', error);
+      console.error('更新数据源失败:', error);
+      setMessage({ type: 'error', text: `❌ 更新失败: ${error.message}` });
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'testing':
-        return <TestTube className="h-4 w-4 text-blue-500 animate-pulse" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+  // 更新Token
+  const handleUpdateToken = async (dataSource) => {
+    if (!tushareForm.token.trim()) {
+      setMessage({ type: 'error', text: '请输入Tushare Token' });
+      return;
+    }
+
+    try {
+      setMessage({ type: '', text: '' });
+      
+      await updateDataSource(dataSource.id, {
+        config_data: { token: tushareForm.token },
+        source_name: tushareForm.source_name || dataSource.source_name,
+      });
+      
+      setMessage({ type: 'success', text: '✅ Token更新成功' });
+      setEditingId(null);
+      setTushareForm({ source_name: 'Tushare Pro', token: '' });
+      loadDataSources();
+    } catch (error) {
+      console.error('更新Token失败:', error);
+      setMessage({ type: 'error', text: `❌ 更新失败: ${error.message}` });
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'connected':
-        return <Badge variant="default" className="bg-green-100 text-green-800">已连接</Badge>;
-      case 'failed':
-        return <Badge variant="destructive">连接失败</Badge>;
-      case 'testing':
-        return <Badge variant="secondary">测试中...</Badge>;
-      default:
-        return <Badge variant="outline">未测试</Badge>;
+  // 删除数据源
+  const handleDelete = async (id) => {
+    if (!confirm('确定要删除此数据源吗？')) return;
+
+    try {
+      setMessage({ type: '', text: '' });
+      await deleteDataSource(id);
+      setMessage({ type: 'success', text: '✅ 数据源已删除' });
+      loadDataSources();
+    } catch (error) {
+      console.error('删除数据源失败:', error);
+      setMessage({ type: 'error', text: `❌ 删除失败: ${error.message}` });
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">数据源配置</h2>
-          <p className="text-slate-600 mt-1">配置和管理股票数据源</p>
-        </div>
-        <Badge variant="outline" className="flex items-center space-x-2">
-          <Database className="h-4 w-4" />
-          <span>当前: {activeSource === 'tushare' ? 'Tushare' : 'Yahoo Finance'}</span>
-        </Badge>
-      </div>
+  // 渲染状态徽章
+  const renderStatusBadge = (dataSource) => {
+    if (dataSource.is_active) {
+      return <Badge className="bg-green-500">已激活</Badge>;
+    }
+    if (dataSource.status === '成功') {
+      return <Badge className="bg-blue-500">已测试</Badge>;
+    }
+    return <Badge variant="outline">未测试</Badge>;
+  };
 
-      <Tabs defaultValue="tushare" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="tushare">Tushare Pro</TabsTrigger>
-          <TabsTrigger value="yahoo">Yahoo Finance</TabsTrigger>
-        </TabsList>
-
-        {/* Tushare配置 */}
-        <TabsContent value="tushare" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Database className="h-5 w-5" />
-                    <span>Tushare Pro 配置</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Tushare是专业的中文财经数据接口，提供A股、港股、美股等全球股票数据
-                  </CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(tushareConfig.test_status)}
-                  {getStatusBadge(tushareConfig.test_status)}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tushare-token">API Token</Label>
-                <Input
-                  id="tushare-token"
-                  type="password"
-                  placeholder="请输入您的Tushare Pro Token"
-                  value={tushareConfig.token}
-                  onChange={(e) => setTushareConfig(prev => ({ ...prev, token: e.target.value }))}
-                />
-                <p className="text-sm text-slate-500">
-                  请访问 <a href="https://tushare.pro" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">tushare.pro</a> 注册账号并获取Token
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="tushare-enabled"
-                  checked={tushareConfig.enabled}
-                  onCheckedChange={(checked) => setTushareConfig(prev => ({ ...prev, enabled: checked }))}
-                />
-                <Label htmlFor="tushare-enabled">启用Tushare数据源</Label>
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => testDataSource('tushare')}
-                  disabled={!tushareConfig.token || testResults.tushare === 'testing'}
-                >
-                  <TestTube className="h-4 w-4 mr-2" />
-                  测试连接
-                </Button>
-                <Button
-                  onClick={() => saveDataSourceConfig('tushare', tushareConfig)}
-                  disabled={!tushareConfig.token}
-                >
-                  保存配置
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => setActiveDataSource('tushare')}
-                  disabled={!tushareConfig.enabled || tushareConfig.test_status !== 'connected'}
-                >
-                  设为主数据源
-                </Button>
-              </div>
-
-              {tushareConfig.test_status === 'failed' && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    连接失败，请检查Token是否正确，或者网络连接是否正常。
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Tushare Pro 特性</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• 支持A股、港股、美股等全球市场</li>
-                  <li>• 提供实时行情、历史数据、财务数据</li>
-                  <li>• 高频数据更新，专业级数据质量</li>
-                  <li>• 需要注册账号并获取积分</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Yahoo Finance配置 */}
-        <TabsContent value="yahoo" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Database className="h-5 w-5" />
-                    <span>Yahoo Finance 配置</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Yahoo Finance提供免费的全球股票数据，适合个人投资者使用
-                  </CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(yahooConfig.test_status)}
-                  {getStatusBadge(yahooConfig.test_status)}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="yahoo-enabled"
-                  checked={yahooConfig.enabled}
-                  onCheckedChange={(checked) => setYahooConfig(prev => ({ ...prev, enabled: checked }))}
-                />
-                <Label htmlFor="yahoo-enabled">启用Yahoo Finance数据源</Label>
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => testDataSource('yahoo')}
-                  disabled={testResults.yahoo === 'testing'}
-                >
-                  <TestTube className="h-4 w-4 mr-2" />
-                  测试连接
-                </Button>
-                <Button
-                  onClick={() => saveDataSourceConfig('yahoo', yahooConfig)}
-                >
-                  保存配置
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => setActiveDataSource('yahoo')}
-                  disabled={!yahooConfig.enabled || yahooConfig.test_status !== 'connected'}
-                >
-                  设为主数据源
-                </Button>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Yahoo Finance 特性</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• 免费使用，无需注册</li>
-                  <li>• 支持全球主要股票市场</li>
-                  <li>• 提供实时行情和历史数据</li>
-                  <li>• 适合个人投资者和小型应用</li>
-                  <li>• 可能存在请求频率限制</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* 数据源状态总览 */}
+  if (loading) {
+    return (
       <Card>
         <CardHeader>
-          <CardTitle>数据源状态总览</CardTitle>
-          <CardDescription>查看所有配置的数据源状态</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            数据源配置
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Database className="h-8 w-8 text-blue-500" />
-                <div>
-                  <h4 className="font-medium">Tushare Pro</h4>
-                  <p className="text-sm text-slate-600">专业财经数据</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                {activeSource === 'tushare' && <Badge variant="default">主数据源</Badge>}
-                {getStatusBadge(tushareConfig.test_status)}
-              </div>
-            </div>
+        <CardContent className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <span className="ml-2 text-gray-500">加载中...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Database className="h-8 w-8 text-purple-500" />
-                <div>
-                  <h4 className="font-medium">Yahoo Finance</h4>
-                  <p className="text-sm text-slate-600">免费股票数据</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                {activeSource === 'yahoo' && <Badge variant="default">主数据源</Badge>}
-                {getStatusBadge(yahooConfig.test_status)}
-              </div>
+  return (
+    <div className="space-y-4">
+      {/* 消息提示 */}
+      {message.text && (
+        <Alert className={message.type === 'error' ? 'border-red-500' : 'border-green-500'}>
+          <AlertDescription>{message.text}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 数据源列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            数据源配置
+          </CardTitle>
+          <CardDescription>
+            配置和管理股票数据源，支持Tushare Pro等多种数据源
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {dataSources.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              暂无数据源配置
             </div>
-          </div>
+          ) : (
+            dataSources.map((ds) => (
+              <Card key={ds.id} className="border-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Database className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <CardTitle className="text-lg">{ds.source_name}</CardTitle>
+                        <CardDescription className="text-sm">
+                          类型: {ds.source_type} | 
+                          {ds.last_test_time && ` 最后测试: ${new Date(ds.last_test_time).toLocaleString()}`}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {renderStatusBadge(ds)}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* 编辑Token表单 */}
+                  {editingId === ds.id ? (
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <Label htmlFor={`token-${ds.id}`}>Tushare Token</Label>
+                        <Input
+                          id={`token-${ds.id}`}
+                          type="text"
+                          placeholder="输入您的Tushare Token"
+                          value={tushareForm.token}
+                          onChange={(e) => setTushareForm({ ...tushareForm, token: e.target.value })}
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          在 <a href="https://tushare.pro/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Tushare官网</a> 注册获取Token
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleUpdateToken(ds)}
+                          size="sm"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          保存
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setEditingId(null);
+                            setTushareForm({ source_name: 'Tushare Pro', token: '' });
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          取消
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => {
+                          setEditingId(ds.id);
+                          setTushareForm({
+                            source_name: ds.source_name,
+                            token: ds.config_data?.token || '',
+                          });
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        配置Token
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleTestConnection(ds.id)}
+                        variant="outline"
+                        size="sm"
+                        disabled={testingId === ds.id || !ds.config_data?.token}
+                      >
+                        {testingId === ds.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            测试中...
+                          </>
+                        ) : (
+                          <>
+                            <Database className="h-4 w-4 mr-1" />
+                            测试连接
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        onClick={() => handleToggleActive(ds)}
+                        variant={ds.is_active ? "default" : "outline"}
+                        size="sm"
+                        disabled={!ds.config_data?.token}
+                      >
+                        {ds.is_active ? (
+                          <>
+                            <XCircle className="h-4 w-4 mr-1" />
+                            停用
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            激活
+                          </>
+                        )}
+                      </Button>
+
+                      {!ds.is_active && (
+                        <Button
+                          onClick={() => handleDelete(ds.id)}
+                          variant="destructive"
+                          size="sm"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          删除
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Token状态提示 */}
+                  {!ds.config_data?.token && (
+                    <Alert>
+                      <AlertDescription className="text-sm">
+                        ⚠️ 请先配置Token才能使用此数据源
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>
   );
-};
-
-export default DataSourceConfig;
-
+}
