@@ -231,28 +231,66 @@ def sync_all_watchlist():
         
         for item in watchlist:
             try:
-                result = StockDataService.sync_daily_data(
+                # 同步三种数据：日线行情、每日指标、资金流向
+                daily_result = StockDataService.sync_daily_data(
                     item.ts_code, 
                     start_date, 
                     end_date
                 )
                 
-                if result['success']:
+                basic_result = StockDataService.sync_daily_basic(
+                    item.ts_code,
+                    start_date,
+                    end_date
+                )
+                
+                moneyflow_result = StockDataService.sync_moneyflow(
+                    item.ts_code,
+                    start_date,
+                    end_date
+                )
+                
+                # 统计成功的数据类型
+                success_types = []
+                total_added = 0
+                
+                if daily_result['success']:
+                    success_types.append(f"日线({daily_result.get('added', 0)}条)")
+                    total_added += daily_result.get('added', 0)
+                
+                if basic_result['success']:
+                    success_types.append(f"指标({basic_result.get('added', 0)}条)")
+                    total_added += basic_result.get('added', 0)
+                
+                if moneyflow_result['success']:
+                    success_types.append(f"资金流向({moneyflow_result.get('added', 0)}条)")
+                    total_added += moneyflow_result.get('added', 0)
+                
+                if success_types:
                     success_count += 1
                     item.last_sync = datetime.utcnow()
                     results.append({
                         'ts_code': item.ts_code,
                         'name': item.name,
                         'success': True,
-                        'added': result.get('added', 0)
+                        'added': total_added,
+                        'details': ', '.join(success_types)
                     })
                 else:
                     failed_count += 1
+                    error_messages = []
+                    if not daily_result['success']:
+                        error_messages.append(f"日线: {daily_result.get('message', '失败')}")
+                    if not basic_result['success']:
+                        error_messages.append(f"指标: {basic_result.get('message', '失败')}")
+                    if not moneyflow_result['success']:
+                        error_messages.append(f"资金流向: {moneyflow_result.get('message', '失败')}")
+                    
                     results.append({
                         'ts_code': item.ts_code,
                         'name': item.name,
                         'success': False,
-                        'message': result.get('message', '未知错误')
+                        'message': '; '.join(error_messages)
                     })
             
             except Exception as e:

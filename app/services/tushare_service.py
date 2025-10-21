@@ -191,3 +191,61 @@ class TushareService:
         except Exception as e:
             logger.error(f"获取分钟数据失败: {e}")
             return []
+
+    def get_daily_basic(self, ts_code: Optional[str] = None,
+                        start_date: Optional[str] = None,
+                        end_date: Optional[str] = None,
+                        trade_date: Optional[str] = None) -> List[Dict]:
+        """获取每日指标数据"""
+        try:
+            if not self.pro:
+                logger.error("Tushare Pro API未初始化")
+                return []
+
+            params = {
+                'ts_code': ts_code,
+                'trade_date': trade_date,
+                'start_date': start_date,
+                'end_date': end_date,
+                'fields': 'ts_code,trade_date,close,turnover_rate,turnover_rate_f,volume_ratio,pe,pe_ttm,pb,ps,ps_ttm,dv_ratio,dv_ttm,total_share,float_share,free_share,total_mv,circ_mv'
+            }
+
+            df = self.pro.daily_basic(**params)
+            if df is None or df.empty:
+                logger.warning("未获取到每日指标数据")
+                return []
+
+            logger.info(f"获取到{len(df)}条每日指标数据")
+            return df.to_dict('records')
+
+        except Exception as e:
+            logger.error(f"获取每日指标失败: {e}")
+            return []
+
+    def get_moneyflow(self, ts_code: str,
+                      start_date: Optional[str] = None,
+                      end_date: Optional[str] = None,
+                      trade_date: Optional[str] = None) -> List[Dict]:
+        """获取资金流向数据"""
+        try:
+            if not self.pro:
+                logger.error("Tushare Pro API未初始化")
+                return []
+
+            df = self.pro.moneyflow(
+                ts_code=ts_code,
+                start_date=start_date,
+                end_date=end_date,
+                trade_date=trade_date
+            )
+
+            if df is None or df.empty:
+                logger.warning("未获取到资金流向数据")
+                return []
+
+            logger.info(f"获取到{len(df)}条资金流向数据")
+            return df.to_dict('records')
+
+        except Exception as e:
+            logger.error(f"获取资金流向失败: {e}")
+            return []

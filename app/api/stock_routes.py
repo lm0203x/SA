@@ -138,3 +138,93 @@ def sync_daily_data(ts_code):
     except Exception as e:
         logger.error(f"同步日线数据失败: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@api_bp.route('/stocks/<string:ts_code>/basic', methods=['GET'])
+def get_daily_basic(ts_code):
+    """获取每日指标数据（带缓存）"""
+    try:
+        # 获取查询参数
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        limit = request.args.get('limit', 60, type=int)
+        
+        # 从数据服务获取（会自动处理缓存）
+        result = StockDataService.get_daily_basic(
+            ts_code=ts_code,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"获取每日指标失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@api_bp.route('/stocks/<string:ts_code>/basic/sync', methods=['POST'])
+def sync_daily_basic(ts_code):
+    """手动同步每日指标数据"""
+    try:
+        data = request.get_json() if request.is_json else {}
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        result = StockDataService.sync_daily_basic(
+            ts_code=ts_code,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"同步每日指标失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@api_bp.route('/stocks/<string:ts_code>/moneyflow', methods=['GET'])
+def get_moneyflow(ts_code):
+    """获取资金流向数据（带缓存）"""
+    try:
+        # 获取查询参数
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        limit = request.args.get('limit', 30, type=int)
+        
+        # 从数据服务获取（会自动处理缓存）
+        result = StockDataService.get_moneyflow(
+            ts_code=ts_code,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"获取资金流向失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@api_bp.route('/stocks/<string:ts_code>/moneyflow/sync', methods=['POST'])
+def sync_moneyflow(ts_code):
+    """手动同步资金流向数据"""
+    try:
+        data = request.get_json() if request.is_json else {}
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        result = StockDataService.sync_moneyflow(
+            ts_code=ts_code,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"同步资金流向失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500

@@ -196,6 +196,50 @@ export async function syncAllWatchlist(params = {}) {
   });
 }
 
+// ==================== 股票指标与资金流向API ====================
+
+/**
+ * 获取股票每日指标数据
+ */
+export async function getStockDailyBasic(tsCode, params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const endpoint = queryString 
+    ? `/stocks/${tsCode}/basic?${queryString}` 
+    : `/stocks/${tsCode}/basic`;
+  return apiRequest(endpoint);
+}
+
+/**
+ * 同步股票每日指标数据
+ */
+export async function syncStockDailyBasic(tsCode, params = {}) {
+  return apiRequest(`/stocks/${tsCode}/basic/sync`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+/**
+ * 获取股票资金流向数据
+ */
+export async function getStockMoneyflow(tsCode, params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const endpoint = queryString 
+    ? `/stocks/${tsCode}/moneyflow?${queryString}` 
+    : `/stocks/${tsCode}/moneyflow`;
+  return apiRequest(endpoint);
+}
+
+/**
+ * 同步股票资金流向数据
+ */
+export async function syncStockMoneyflow(tsCode, params = {}) {
+  return apiRequest(`/stocks/${tsCode}/moneyflow/sync`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
 // ==================== 预警规则API ====================
 
 /**
@@ -258,6 +302,12 @@ export default {
   getStockDailyData,
   syncStockList,
   syncStockDailyData,
+  
+  // 股票指标与资金流向
+  getStockDailyBasic,
+  syncStockDailyBasic,
+  getStockMoneyflow,
+  syncStockMoneyflow,
   
   // 自选股
   getWatchlist,

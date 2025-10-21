@@ -18,6 +18,7 @@ import {
   getStockDailyData 
 } from '@/services/api';
 import StockChart from './StockChart';
+import StockIndicators from './StockIndicators';
 
 export default function WatchlistManager() {
   const [watchlist, setWatchlist] = useState([]);
@@ -322,10 +323,17 @@ export default function WatchlistManager() {
           </CardContent>
         </Card>
 
-        {/* 右侧：K线图 */}
-        <div className="lg:col-span-2">
+        {/* 右侧：K线图和指标数据 */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* K线图 */}
           <StockChart 
             data={chartData}
+            stockInfo={selectedStock}
+            loading={chartLoading}
+          />
+          
+          {/* 股票指标 */}
+          <StockIndicators 
             stockInfo={selectedStock}
             loading={chartLoading}
           />

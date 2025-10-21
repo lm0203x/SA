@@ -3,7 +3,7 @@
  * 使用Recharts实现股票K线图展示
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ComposedChart, 
   Line, 
@@ -16,6 +16,8 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * 自定义Tooltip
@@ -47,6 +49,19 @@ const CustomTooltip = ({ active, payload }) => {
  * K线图组件
  */
 export default function StockChart({ data, stockInfo, loading }) {
+  const [timeframe, setTimeframe] = useState('daily');
+  
+  // 时间周期选项
+  const timeframeOptions = [
+    { key: 'daily', label: '日K', enabled: true },
+    { key: 'weekly', label: '周K', enabled: false },
+    { key: 'monthly', label: '月K', enabled: false },
+    { key: '60min', label: '60分钟', enabled: false },
+    { key: '30min', label: '30分钟', enabled: false },
+    { key: '15min', label: '15分钟', enabled: false },
+    { key: '5min', label: '5分钟', enabled: false },
+    { key: '1min', label: '1分钟', enabled: false }
+  ];
   if (loading) {
     return (
       <Card className="p-6">
@@ -90,9 +105,9 @@ export default function StockChart({ data, stockInfo, loading }) {
 
   return (
     <Card className="p-6">
-      {/* 股票信息标题 */}
+      {/* 股票信息标题和时间周期切换 */}
       {stockInfo && (
-        <div className="mb-4 pb-4 border-b">
+        <div className="mb-4 pb-4 border-b space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold">{stockInfo.name}</h3>
@@ -113,6 +128,30 @@ export default function StockChart({ data, stockInfo, loading }) {
                 </p>
               </div>
             )}
+          </div>
+          
+          {/* 时间周期切换按钮 */}
+          <div className="flex flex-wrap gap-2">
+            {timeframeOptions.map((option) => (
+              <Button
+                key={option.key}
+                size="sm"
+                variant={timeframe === option.key ? "default" : "outline"}
+                disabled={!option.enabled}
+                onClick={() => option.enabled && setTimeframe(option.key)}
+                className={`relative ${!option.enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {option.label}
+                {!option.enabled && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4 min-w-0"
+                  >
+                    敬请期待
+                  </Badge>
+                )}
+              </Button>
+            ))}
           </div>
         </div>
       )}
@@ -204,9 +243,10 @@ export default function StockChart({ data, stockInfo, loading }) {
       </ResponsiveContainer>
 
       {/* 图表说明 */}
-      <div className="mt-4 pt-4 border-t text-sm text-gray-500">
+      <div className="mt-4 pt-4 border-t text-sm text-gray-500 space-y-1">
         <p>📊 数据范围: {formatDate(sortedData[0]?.trade_date)} 至 {formatDate(sortedData[sortedData.length - 1]?.trade_date)}</p>
-        <p>📈 共 {sortedData.length} 个交易日</p>
+        <p>📈 共 {sortedData.length} 个交易日 ({timeframeOptions.find(opt => opt.key === timeframe)?.label})</p>
+        <p>💾 数据来源: Tushare Pro (2120积分权限)</p>
       </div>
     </Card>
   );
