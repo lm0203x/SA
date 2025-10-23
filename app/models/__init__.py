@@ -16,6 +16,8 @@ from .stock_balance_sheet import StockBalanceSheet
 from .text2sql_metadata import TableMetadata, FieldMetadata, QueryTemplate, QueryHistory, BusinessDictionary
 from .data_source_config import DataSourceConfig
 from .watchlist import Watchlist
+from .risk_alert import RiskAlert
+from .alert_rule import AlertRule
 
 __all__ = [
     'StockBasic',
@@ -39,5 +41,7 @@ __all__ = [
     'QueryHistory',
     'BusinessDictionary',
     'DataSourceConfig',
-    'Watchlist'
+    'Watchlist',
+    'RiskAlert',
+    'AlertRule'
 ] 

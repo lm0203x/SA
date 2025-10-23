@@ -91,7 +91,54 @@ export default function WatchlistManager() {
 
   // 删除自选股
   const handleRemove = async (id, tsCode) => {
-    if (!confirm(`确认删除 ${tsCode} ?`)) return;
+    // 创建现代化确认对话框
+    const confirmDelete = () => {
+      return new Promise((resolve) => {
+        // 创建模态框元素
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all">
+            <div class="text-center">
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">确认删除 ${tsCode}</h3>
+              <p class="text-gray-600 mb-6">此操作无法撤销</p>
+              <div class="flex gap-3 justify-center">
+                <button id="cancel-btn" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 min-w-[80px]">
+                  取消
+                </button>
+                <button id="confirm-btn" class="px-6 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-all duration-200 min-w-[80px]">
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 绑定事件
+        modal.querySelector('#cancel-btn').onclick = () => {
+          document.body.removeChild(modal);
+          resolve(false);
+        };
+        
+        modal.querySelector('#confirm-btn').onclick = () => {
+          document.body.removeChild(modal);
+          resolve(true);
+        };
+        
+        // 点击背景关闭
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            document.body.removeChild(modal);
+            resolve(false);
+          }
+        };
+      });
+    };
+    
+    const confirmed = await confirmDelete();
+    if (!confirmed) return;
     
     try {
       const response = await removeFromWatchlist(id);

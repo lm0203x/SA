@@ -285,6 +285,34 @@ export async function getAlertRecords(limit = 50) {
   return apiRequest(`/alerts?limit=${limit}`);
 }
 
+// ==================== 预警触发相关 ====================
+
+/**
+ * 手动触发预警检查
+ */
+export async function triggerAlertCheck(options = {}) {
+  return await apiRequest('/trigger/check', {
+    method: 'POST',
+    body: JSON.stringify(options)
+  });
+}
+
+/**
+ * 获取预警触发统计
+ */
+export async function getTriggerStats(days = 7) {
+  return await apiRequest(`/trigger/stats?days=${days}`);
+}
+
+/**
+ * 触发指定股票的预警检查
+ */
+export async function triggerStockCheck(tsCode) {
+  return await apiRequest(`/trigger/stock/${tsCode}`, {
+    method: 'POST'
+  });
+}
+
 // ==================== 导出所有API ====================
 
 export default {
@@ -323,4 +351,9 @@ export default {
   updateAlertRule,
   deleteAlertRule,
   getAlertRecords,
+  
+  // 预警触发
+  triggerAlertCheck,
+  getTriggerStats,
+  triggerStockCheck,
 };
