@@ -1,898 +1,363 @@
-# 多因子选股系统
+# 基于WebSocket的实时股票异动检测与智能预警系统
 
-一个功能完整的多因子选股系统，集成了因子计算、机器学习建模、股票选择、组合优化和回测验证等功能。
+一个现代化的股票监控与预警系统，采用前后端分离架构，集成了实时数据获取、异动检测、智能预警、用户界面等完整功能。
 
-### 本系统目前项目未完成开发，仅限于学习交流，需要二次开发或定制化开发，请联系 39189996@qq.com
+## 🚀 项目状态
 
-### 数据库下载地址：
--- 通过网盘分享的文件：stock.sql.zip
--- 链接: https://pan.baidu.com/s/1vOtkLP8pQEU8k0pGRaYwUw?pwd=q4mg 提取码: q4mg
+**当前版本**: v2.0 (重构版本)  
+**开发状态**: 核心功能已完成，系统可正常使用  
+**架构**: React + Flask + WebSocket 前后端分离  
+**数据源**: Tushare Pro API (支持2120积分权限)  
 
-![系统主界面](./images/1-2.png)
+### ✅ 已完成功能
+- 📊 **数据获取系统**: Tushare Pro集成，支持日线、指标、资金流向数据
+- ⚠️ **预警规则系统**: 多维度预警规则配置和管理
+- 📝 **预警记录系统**: 完整的预警历史记录和统计
+- 🎯 **前端界面**: 现代化React界面，自选股管理，K线图展示
+- 🔌 **API接口**: 完整的RESTful API，支持CRUD操作
+- 🗄️ **数据库架构**: 优化的MySQL表结构和索引设计
+
+### 🚧 开发中功能
+- 🌐 **WebSocket实时通信**: 架构完成，待激活
+- 🔍 **异动检测算法**: 框架完成，待实现
+- 📱 **实时监控面板**: 计划中
+
+![系统主界面](./web/public/screenshot.png)
 
 ## 🌟 系统特色
 
 ### 核心功能
-- **📊 因子管理**: 内置12个常用因子，支持自定义因子创建
-- **🤖 机器学习**: 支持随机森林、XGBoost、LightGBM等算法
-- **🎯 智能选股**: 基于因子和ML模型的多种选股策略
-- **📈 组合优化**: 等权重、均值-方差、风险平价等优化方法
-- **🔄 回测验证**: 完整的策略回测和多策略比较
-- **📋 分析报告**: 行业分析、因子贡献度等深度分析
-
-![系统功能概览](./images/1-3.png)
+- **📊 实时数据监控**: 基于Tushare Pro的高质量股票数据
+- **⚠️ 智能预警系统**: 多维度预警规则，支持价格、成交量、技术指标等
+- **🔍 异动检测**: 统计学算法识别价格和成交量异常变化
+- **📱 现代化界面**: React + Tailwind CSS响应式设计
+- **🌐 实时通信**: WebSocket技术实现毫秒级数据推送
+- **📈 数据可视化**: K线图、指标图表、实时更新
 
 ### 技术架构
-- **后端**: Python 3.8+ / Flask / SQLAlchemy
-- **数据处理**: Pandas / NumPy / Scikit-learn
-- **机器学习**: XGBoost / LightGBM / CVXPY
-- **前端**: Bootstrap 5 / JavaScript
-- **数据库**: MySQL / SQLite
+- **后端**: Python 3.11+ / Flask / SQLAlchemy / WebSocket
+- **前端**: React 18 / Vite / Tailwind CSS / Shadcn/UI
+- **数据处理**: Pandas / NumPy / Tushare Pro
+- **数据库**: MySQL 8.0+ / 优化索引设计
+- **通信**: WebSocket / RESTful API / CORS支持
 
 ## 🚀 快速开始
 
 ### 1. 环境要求
-- Python 3.8+
-- MySQL 5.7或8.x
+- Python 3.11+
+- Node.js 18+
+- MySQL 8.0+
+- Tushare Pro账号 (免费)
 
-### 2. 安装依赖
+### 2. 后端安装
 ```bash
-# 克隆项目
-git clone <repository-url>
-cd quantitative_analysis
+# 安装Python依赖
+pip install -r requirements_minimal.txt
+
+# 初始化数据库
+python init_datasource_db.py
+
+# 启动后端服务
+python run.py
+```
+
+### 3. 前端安装
+```bash
+# 进入前端目录
+cd web
 
 # 安装依赖
-pip install -r requirements.txt
+pnpm install
+
+# 启动开发服务器
+pnpm dev
 ```
 
-### 3. 启动系统
-```bash
-# 使用启动脚本
-python run_system.py
+### 4. 配置数据源
+1. 访问 http://localhost:5173
+2. 进入"数据源"标签页
+3. 输入Tushare Token
+4. 测试连接并激活
 
-# 或者直接运行（推荐）
-python app.py
-```
-# 遇到以下问题
-```
-Traceback (most recent call last):
-  File "/root/stock/run.py", line 9, in <module>
-    app = create_app(os.getenv('FLASK_ENV', 'default'))
-
-执行：pip install eventlet
-```
-
-![系统启动界面](./images/1-4.png)
-
-### 4. 访问系统
-- Web界面: http://localhost:5000
-- API文档: http://localhost:5000/api
+### 5. 访问系统
+- **前端界面**: http://localhost:5173
+- **后端API**: http://localhost:5000/api
+- **WebSocket**: ws://localhost:5000
 
 ## 📖 使用指南
 
-### 系统启动器
-运行 `python run_system.py` 后，选择相应操作：
+### 主要功能模块
 
-1. **检查系统依赖** - 验证Python版本和必需包
-2. **初始化数据库** - 创建数据表和内置因子
-3. **启动Web服务器** - 启动开发模式服务器
-4. **启动Web服务器(生产模式)** - 启动生产模式服务器
-5. **运行系统演示** - 执行完整功能演示
-6. **显示系统信息** - 查看系统功能概览
+#### 1. 股票行情监控
+- **自选股管理**: 添加/删除关注的股票
+- **K线图展示**: 实时价格走势图表
+- **指标面板**: 每日指标和资金流向数据
+- **时间切换**: 支持不同时间周期(开发中)
 
-![系统启动选项](./images/1-5.png)
+#### 2. 预警规则配置
+- **规则类型**: 价格阈值、涨跌幅、成交量、换手率等
+- **比较条件**: 大于、小于、等于等逻辑运算
+- **预警级别**: 低级、中级、高级、严重四个级别
+- **规则管理**: 启用/禁用、编辑、删除规则
 
-### Web界面操作
+#### 3. 预警记录查看
+- **历史记录**: 完整的预警触发历史
+- **统计分析**: 按类型、级别、时间的统计信息
+- **状态管理**: 预警解决状态跟踪
 
-#### 1. 仪表盘
-- 查看系统状态和统计信息
-- 快速访问主要功能
+#### 4. 数据源配置
+- **Tushare集成**: 支持Tushare Pro API配置
+- **连接测试**: 验证数据源连接状态
+- **权限管理**: 根据积分显示可用功能
 
-![仪表盘界面](./images/1-6.png)
+## 📋 开发进度与TODO
 
-#### 2. 因子管理
-- 查看内置因子列表
-- 创建自定义因子
-- 计算因子值
+### ✅ 已完成功能 (Phase 1)
 
-![因子管理界面](./images/1-7.png)
+#### 数据获取与存储系统 (100%)
+- ✅ Tushare Pro API集成，支持2120积分权限
+- ✅ 股票基础数据同步 (`stock_basic`)
+- ✅ 日线行情数据 (`stock_daily_history`)
+- ✅ 每日指标数据 (`stock_daily_basic`)
+- ✅ 资金流向数据 (`stock_moneyflow`)
+- ✅ NaN值处理和数据清洗机制
+- ✅ 增量同步和全量刷新
 
-![因子列表](./images/1-8.png)
+#### 预警系统核心 (100%)
+- ✅ 预警规则数据库设计 (`alert_rules`)
+- ✅ 预警记录系统 (`risk_alerts`)
+- ✅ 多维度预警规则支持
+- ✅ 预警触发引擎 (手动触发版本)
+- ✅ 预警统计和历史管理
 
-#### 3. 模型管理
-- 创建机器学习模型
-- 训练模型
-- 模型预测
+#### 前端用户界面 (95%)
+- ✅ React + Tailwind CSS现代化界面
+- ✅ 自选股管理功能
+- ✅ K线图展示 (ECharts集成)
+- ✅ 预警规则配置页面
+- ✅ 数据源配置界面
+- ✅ 响应式设计和优雅交互
+- ✅ 自定义确认对话框
 
-![模型管理界面](./images/1-9.png)
+#### API接口系统 (100%)
+- ✅ RESTful API设计
+- ✅ 完整的CRUD操作
+- ✅ 数据验证和错误处理
+- ✅ CORS跨域支持
+- ✅ 统一响应格式
 
-![模型训练](./images/1-10.png)
+### 🚧 进行中功能 (Phase 2)
 
-#### 4. 股票选择
-- 基于因子的选股
-- 基于ML模型的选股
-- 配置选股参数
+#### 实时监控系统 (架构完成，待激活)
+- 🔄 WebSocket实时通信框架
+- 🔄 实时数据推送服务
+- 🔄 客户端连接管理
+- ⏳ 实时数据流激活
+- ⏳ 前端WebSocket集成
 
-![股票选择界面](./images/1-11.png)
+#### 异动检测算法 (框架完成，待实现)
+- 🔄 统计学异动检测框架
+- 🔄 技术指标分析模块
+- ⏳ 价格异动检测算法
+- ⏳ 成交量异动检测算法
+- ⏳ 多维度综合分析
 
-![选股结果](./images/1-12.png)
+### ⏳ 计划中功能 (Phase 3)
 
-#### 5. 组合优化
-- 多种优化方法
-- 约束条件设置
-- 权重分配结果
+#### 自动化预警监控
+- 📅 **定时任务调度器**: 替代手动触发的自动监控机制
+- 📅 **实时数据管道**: 数据更新时自动触发预警检查
+- 📅 **多渠道通知**: 邮件、短信、WebSocket推送等
+- 📅 **预警性能优化**: 大量规则和股票的高效处理
 
-![组合优化界面](./images/1-13.png)
+#### 高级功能扩展
+- 📅 **实时监控面板**: 市场概览和异动榜单
+- 📅 **机器学习预测**: 基于历史数据的价格预测
+- 📅 **投资组合管理**: 多股票组合风险管理
+- 📅 **策略回测**: 预警策略历史回测分析
+- 📅 **移动端适配**: 响应式设计优化
 
-![优化结果](./images/1-14.png)
+#### 系统优化
+- 📅 **缓存策略**: Redis集成和多层缓存
+- 📅 **数据库优化**: 索引优化和查询性能提升
+- 📅 **负载均衡**: 多实例部署支持
+- 📅 **监控告警**: 系统运行状态监控
 
-#### 6. 分析报告
-- 行业分析
-- 因子贡献度分析
+### 🎯 近期重点任务
 
-![分析报告界面](./images/1-15.png)
+1. **自动化预警监控** (优先级: 高)
+   - 实现定时任务调度器，每分钟自动运行预警检查
+   - 替代当前的手动触发机制
+   - 集成实时数据更新触发
 
-![行业分析](./images/1-16.png)
+2. **WebSocket实时通信激活** (优先级: 高)
+   - 激活现有WebSocket框架
+   - 实现前端实时数据接收
+   - 完成实时预警推送
 
-#### 7. 回测验证
-- 单策略回测
-- 多策略比较
-
-![回测验证界面](./images/1-17.png)
-
-![回测结果](./images/1-18.png)
-
-![策略比较](./images/1-19.png)
-
-### API接口使用
-
-![API接口文档](./images/1-20.png)
-
-#### 因子相关接口
-```python
-import requests
-
-# 获取因子列表
-response = requests.get('http://localhost:5000/api/ml-factor/factors/list')
-
-# 创建自定义因子
-factor_data = {
-    "factor_id": "custom_momentum",
-    "factor_name": "自定义动量因子",
-    "factor_type": "momentum",
-    "factor_formula": "close.pct_change(10)",
-    "description": "10日价格变化率"
-}
-response = requests.post('http://localhost:5000/api/ml-factor/factors/custom', json=factor_data)
-
-# 计算因子值
-calc_data = {
-    "trade_date": "2024-01-15",
-    "factor_ids": ["momentum_1d", "momentum_5d"]
-}
-response = requests.post('http://localhost:5000/api/ml-factor/factors/calculate', json=calc_data)
-```
-
-#### 模型相关接口
-```python
-# 创建模型
-model_data = {
-    "model_id": "my_xgb_model",
-    "model_name": "我的XGBoost模型",
-    "model_type": "xgboost",
-    "factor_list": ["momentum_1d", "momentum_5d", "volatility_20d"],
-    "target_type": "return_5d"
-}
-response = requests.post('http://localhost:5000/api/ml-factor/models/create', json=model_data)
-
-# 训练模型
-train_data = {
-    "model_id": "my_xgb_model",
-    "start_date": "2023-01-01",
-    "end_date": "2023-12-31"
-}
-response = requests.post('http://localhost:5000/api/ml-factor/models/train', json=train_data)
-```
-
-#### 选股相关接口
-```python
-# 基于因子选股
-selection_data = {
-    "trade_date": "2024-01-15",
-    "factor_list": ["momentum_1d", "momentum_5d"],
-    "method": "equal_weight",
-    "top_n": 50
-}
-response = requests.post('http://localhost:5000/api/ml-factor/scoring/factor-based', json=selection_data)
-
-# 基于ML模型选股
-ml_selection_data = {
-    "trade_date": "2024-01-15",
-    "model_ids": ["my_xgb_model"],
-    "top_n": 50
-}
-response = requests.post('http://localhost:5000/api/ml-factor/scoring/ml-based', json=ml_selection_data)
-```
-
-#### 组合优化接口
-```python
-# 组合优化
-optimization_data = {
-    "expected_returns": {"000001.SZ": 0.05, "000002.SZ": 0.03},
-    "method": "mean_variance",
-    "constraints": {
-        "max_weight": 0.1,
-        "risk_aversion": 1.0
-    }
-}
-response = requests.post('http://localhost:5000/api/ml-factor/portfolio/optimize', json=optimization_data)
-```
+3. **异动检测算法实现** (优先级: 中)
+   - 实现基于统计学的价格异动检测
+   - 实现成交量异动检测算法
+   - 集成技术指标分析
 
 ## 🏗️ 系统架构
 
-![系统架构图](./images/1-21.png)
-
-### 目录结构
+### 整体架构设计
 ```
-stock_analysis/
-├── app/                    # 应用主目录
-│   ├── api/               # API接口
-│   ├── models/            # 数据模型
-│   ├── services/          # 业务服务
-│   ├── routes/            # 路由
-│   └── utils/             # 工具函数
-├── templates/             # HTML模板
-├── static/               # 静态文件
-├── examples/             # 使用示例
-├── config.py             # 配置文件
-├── requirements.txt      # 依赖包
-├── run_system.py         # 系统启动器
-└── README.md            # 说明文档
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   前端界面层     │    │   通信层        │    │   后端服务层     │
+│                │    │                │    │                │
+│ React 18       │◄──►│ WebSocket      │◄──►│ Flask API      │
+│ Tailwind CSS   │    │ RESTful API    │    │ SQLAlchemy ORM │
+│ Shadcn/UI      │    │ CORS Support   │    │ 业务逻辑层      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                      │
+                       ┌─────────────────┐            │
+                       │   数据源层       │◄───────────┘
+                       │                │
+                       │ Tushare Pro    │
+                       │ Yahoo Finance  │
+                       │ 本地缓存       │
+                       └─────────────────┘
+                                │
+                       ┌─────────────────┐
+                       │   数据存储层     │
+                       │                │
+                       │ MySQL 8.0+     │
+                       │ 索引优化       │
+                       │ 数据完整性     │
+                       └─────────────────┘
 ```
 
 ### 核心模块
 
-#### 1. 因子引擎 (FactorEngine)
-- 因子定义管理
-- 因子值计算
-- 支持自定义公式
+#### 1. 数据管理层
+- **TushareService**: Tushare Pro API集成
+- **StockDataService**: 数据同步和缓存管理
+- **RealtimeDataManager**: 实时数据处理
 
-#### 2. 机器学习管理器 (MLModelManager)
-- 模型创建和训练
-- 预测和评估
-- 支持多种算法
+#### 2. 业务逻辑层
+- **AlertTriggerEngine**: 预警规则触发引擎
+- **AnomalyDetectionEngine**: 异动检测算法 (开发中)
+- **RealtimeMonitorService**: 实时监控服务 (开发中)
 
-#### 3. 股票打分引擎 (StockScoringEngine)
-- 因子打分
-- ML模型打分
-- 综合评分
+#### 3. 通信层
+- **WebSocket服务**: 实时双向通信
+- **RESTful API**: 标准HTTP接口
+- **事件驱动**: 异步消息处理
 
-#### 4. 组合优化器 (PortfolioOptimizer)
-- 多种优化算法
-- 约束条件支持
-- 风险模型估计
+#### 4. 前端组件
+- **StockDashboard**: 主控制面板
+- **WatchlistManager**: 自选股管理
+- **AlertRules**: 预警规则配置
+- **StockChart**: K线图表组件
 
-#### 5. 回测引擎 (BacktestEngine)
-- 策略回测
-- 性能指标计算
-- 多策略比较
+### API接口使用
 
-## 📊 数据源接入架构详解
+详细的API文档请参考：[API_ROUTES_SUMMARY.md](./实时股票异动检测与智能预警系统核心功能设计/API_ROUTES_SUMMARY.md)
 
-### 数据源层次结构
-```
-数据获取层
-├── Tushare Pro API (付费，高质量)
-│   ├── 日线数据 (免费)
-│   ├── 分钟线数据 (需要权限)
-│   └── 基本面数据 (部分免费)
-├── Baostock API (免费，开源)
-│   ├── 日线数据 ✅
-│   ├── 5分钟线数据 ✅
-│   └── 基本面数据 ✅
-└── 本地数据库缓存
-    ├── MySQL/SQLite存储
-    └── Redis缓存加速
-```
-
-### 核心数据管理器
-
-#### 1. RealtimeDataManager (实时数据管理器)
-**文件位置**: `app/services/realtime_data_manager.py`
-
-**主要功能**:
-- 统一管理多个数据源
-- 分钟级数据同步和聚合
-- 数据质量监控
-- 实时价格获取
-
-**数据源切换逻辑**:
+#### 股票数据接口
 ```python
-def sync_minute_data(self, ts_code, start_date, end_date, period_type, use_baostock=False):
-    if use_baostock:
-        # 使用Baostock免费数据源
-        with self.minute_sync_service as sync_service:
-            result = sync_service.sync_single_stock_data(ts_code, period_type, start_date, end_date)
-    else:
-        # 使用Tushare Pro API (需要token和权限)
-        return self._sync_minute_data_legacy(ts_code, start_date, end_date, period_type)
+import requests
+
+# 获取股票列表
+response = requests.get('http://localhost:5000/api/stocks')
+
+# 获取日线数据
+response = requests.get('http://localhost:5000/api/stocks/000001.SZ/daily?limit=60')
+
+# 获取每日指标
+response = requests.get('http://localhost:5000/api/stocks/000001.SZ/basic')
+
+# 获取资金流向
+response = requests.get('http://localhost:5000/api/stocks/000001.SZ/moneyflow')
 ```
 
-**数据处理流程**:
-1. **数据获取** → 从API获取原始数据
-2. **格式转换** → 统一数据格式 (`_convert_to_model_format`)
-3. **数据验证** → 检查数据完整性
-4. **批量入库** → 使用 `StockMinuteData.bulk_insert()`
-5. **数据聚合** → 生成5min、15min、30min、60min周期数据
-
-#### 2. MinuteDataSyncService (分钟数据同步服务)
-**文件位置**: `app/services/minute_data_sync_service.py`
-
-**Baostock集成逻辑**:
+#### 预警规则接口
 ```python
-class MinuteDataSyncService:
-    PERIOD_TYPES = {
-        '1min': '1',    # 注意：Baostock不支持1分钟，会转为5分钟
-        '5min': '5', 
-        '15min': '15',
-        '30min': '30',
-        '60min': '60'
-    }
-    
-    def get_stock_minute_data_bs(self, stock_code, start_date, end_date, period_type):
-        # 1. 登录Baostock
-        bs.login()
-        
-        # 2. 转换股票代码格式 (000001.SZ → sz.000001)
-        bs_code = self.convert_ts_code_to_bs_code(stock_code)
-        
-        # 3. 调用Baostock API
-        rs = bs.query_history_k_data_plus(
-            bs_code, 
-            "date,time,code,open,high,low,close,volume,amount",
-            start_date=start_date, 
-            end_date=end_date,
-            frequency=frequency,  # 分钟级别
-            adjustflag="3"        # 不复权
-        )
-        
-        # 4. 数据清洗和转换
-        return self._process_baostock_data(rs)
-```
+# 获取预警规则
+response = requests.get('http://localhost:5000/api/rules')
 
-#### 3. StockService (股票基础服务)
-**文件位置**: `app/services/stock_service.py`
-
-**缓存策略**:
-```python
-@cached(expire=1800, key_prefix='stock_basic')  # 30分钟缓存
-def get_stock_list(industry=None, area=None, page=1, page_size=20):
-    # 从数据库获取股票列表，支持行业、地区筛选
-
-@cached(expire=300, key_prefix='daily_history')  # 5分钟缓存
-def get_daily_history(ts_code, start_date=None, end_date=None, limit=60):
-    # 获取日线历史数据，按日期倒序
-```
-
-### 数据模型设计
-
-#### StockMinuteData (分钟数据模型)
-```python
-class StockMinuteData(db.Model):
-    ts_code = db.Column(db.String(10))      # 股票代码
-    datetime = db.Column(db.DateTime)       # 时间戳
-    period_type = db.Column(db.String(10))  # 周期类型
-    open = db.Column(db.Float)              # 开盘价
-    high = db.Column(db.Float)              # 最高价
-    low = db.Column(db.Float)               # 最低价
-    close = db.Column(db.Float)             # 收盘价
-    volume = db.Column(db.BigInteger)       # 成交量
-    amount = db.Column(db.Float)            # 成交额
-    pre_close = db.Column(db.Float)         # 前收盘价
-    change = db.Column(db.Float)            # 涨跌额
-    pct_chg = db.Column(db.Float)           # 涨跌幅%
-```
-
-### API接口层
-
-#### 实时分析API (`/api/realtime-analysis/`)
-```python
-# 数据同步接口
-POST /api/realtime-analysis/data/sync
-{
-    "ts_code": "000001.SZ",
-    "start_date": "2025-09-21", 
-    "end_date": "2025-09-28",
-    "period_type": "5min",
-    "use_baostock": true  # 选择数据源
+# 创建预警规则
+rule_data = {
+    "rule_name": "平安银行涨幅预警",
+    "stock_code": "000001.SZ",
+    "rule_type": "price_change_percent",
+    "comparison_operator": "greater_than",
+    "threshold_value": 5.0,
+    "alert_level": "medium"
 }
+response = requests.post('http://localhost:5000/api/rules', json=rule_data)
 
-# 批量同步接口
-POST /api/realtime-analysis/data/sync-multiple
-{
-    "stock_list": ["000001.SZ", "000002.SZ"],
-    "period_type": "5min",
-    "batch_size": 10,
-    "use_baostock": true
-}
-
-# 数据质量检查
-GET /api/realtime-analysis/data/quality?ts_code=000001.SZ&period_type=5min
-
-# 获取实时价格
-GET /api/realtime-analysis/data/price?ts_code=000001.SZ
+# 触发预警检查
+response = requests.post('http://localhost:5000/api/trigger/check')
 ```
 
-### 数据源配置
+#### WebSocket连接
+```javascript
+import io from 'socket.io-client';
 
-#### 1. Tushare Pro配置
-```python
-# 环境变量配置
-TUSHARE_TOKEN = "your_tushare_token_here"
+const socket = io('http://localhost:5000');
 
-# 或在config.py中配置
-class Config:
-    TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN')
-    
-# 使用方式
-data_manager = RealtimeDataManager(tushare_token="your_token")
-result = data_manager.sync_minute_data("000001.SZ", use_baostock=False)
+// 连接成功
+socket.on('connected', (data) => {
+    console.log('连接成功:', data);
+});
+
+// 接收实时数据
+socket.on('market_data_update', (data) => {
+    console.log('市场数据更新:', data);
+});
+
+// 接收预警信息
+socket.on('risk_alert', (data) => {
+    console.log('预警信息:', data);
+});
 ```
 
-#### 2. Baostock配置 (推荐)
-```python
-# 无需token，直接使用
-data_manager = RealtimeDataManager()
-result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
+## 📁 项目目录结构
 
-# 批量同步示例
-stock_list = ["000001.SZ", "000002.SZ", "600519.SH"]
-result = data_manager.sync_multiple_stocks_data(
-    stock_list=stock_list,
-    period_type="5min",
-    use_baostock=True,
-    batch_size=10
-)
 ```
-
-### 数据源对比
-
-| 特性 | Tushare Pro | Baostock | 本地数据库 |
-|------|-------------|----------|------------|
-| **费用** | 付费(分钟线需权限) | 完全免费 | 无额外费用 |
-| **数据质量** | 高质量，实时性好 | 质量良好，有延迟 | 取决于数据源 |
-| **访问限制** | 有积分和频率限制 | 无严格限制 | 无限制 |
-| **支持周期** | 1min, 5min, 15min等 | 5min, 15min, 30min, 60min | 全支持 |
-| **历史数据** | 丰富(2005年至今) | 较丰富(1990年至今) | 取决于同步情况 |
-| **实时性** | 准实时(延迟<1分钟) | 日终数据(T+1) | 取决于更新频率 |
-| **股票覆盖** | A股全覆盖 | A股全覆盖 | 取决于同步范围 |
-
-### 推荐使用方案
-
-#### 方案一：纯Baostock (推荐新手)
-```python
-# 优点：免费、稳定、数据质量好
-# 缺点：无实时数据、只有日终数据
-
-# 配置
-USE_BAOSTOCK_ONLY = True
-
-# 使用
-result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
+lm_quantitative_analysis/
+├── app/                          # 后端应用
+│   ├── api/                      # REST API接口
+│   │   ├── stock_routes.py      # 股票数据API
+│   │   ├── alert_routes.py      # 预警规则API
+│   │   └── datasource_routes.py # 数据源配置API
+│   ├── models/                   # 数据模型
+│   │   ├── stock_basic.py       # 股票基础信息
+│   │   ├── alert_rule.py        # 预警规则模型
+│   │   └── risk_alert.py        # 预警记录模型
+│   ├── services/                 # 业务服务
+│   │   ├── tushare_service.py   # Tushare数据服务
+│   │   ├── stock_data_service.py # 股票数据服务
+│   │   └── alert_trigger_engine.py # 预警触发引擎
+│   ├── websocket/               # WebSocket事件
+│   │   └── websocket_events.py  # 实时通信事件
+│   └── utils/                   # 工具函数
+├── web/                         # 前端应用
+│   ├── src/
+│   │   ├── components/          # React组件
+│   │   │   ├── ui/             # Shadcn UI组件
+│   │   │   ├── StockDashboard.jsx
+│   │   │   ├── WatchlistManager.jsx
+│   │   │   ├── AlertRules.jsx
+│   │   │   └── StockChart.jsx
+│   │   ├── services/           # 前端服务
+│   │   │   └── api.js          # API调用封装
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
+├── 实时股票异动检测与智能预警系统核心功能设计/  # 项目文档
+│   ├── 基于WebSocket的实时股票异动检测与智能预警系统.md
+│   ├── 快速启动指南.md
+│   └── API_ROUTES_SUMMARY.md
+├── config.py                    # 配置文件
+├── run.py                       # 启动脚本
+├── requirements_minimal.txt     # 依赖清单
+└── README.md                   # 项目说明
 ```
-
-#### 方案二：Tushare Pro + Baostock (推荐生产)
-```python
-# 优点：数据质量最高、实时性好
-# 缺点：需要付费、有访问限制
-
-# 配置
-TUSHARE_TOKEN = "your_premium_token"
-FALLBACK_TO_BAOSTOCK = True
-
-# 使用 (自动降级)
-try:
-    result = data_manager.sync_minute_data("000001.SZ", use_baostock=False)
-except Exception:
-    result = data_manager.sync_minute_data("000001.SZ", use_baostock=True)
-```
-
-#### 方案三：混合模式 (推荐开发)
-```python
-# 历史数据用Baostock，实时数据用Tushare
-def hybrid_sync_strategy(ts_code, start_date, end_date):
-    # 1. 历史数据用Baostock (免费、稳定)
-    if start_date < "2025-01-01":
-        return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=True)
-    
-    # 2. 近期数据用Tushare (实时性好)
-    else:
-        try:
-            return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=False)
-        except Exception:
-            return data_manager.sync_minute_data(ts_code, start_date, end_date, use_baostock=True)
-```
-
-### 数据同步策略
-
-#### 1. 增量同步
-```python
-def sync_incremental_data(self, ts_code):
-    # 1. 获取数据库中最新数据时间
-    latest_time = StockMinuteData.get_latest_time(ts_code)
-    
-    # 2. 从最新时间开始同步到当前时间
-    start_date = latest_time.strftime('%Y-%m-%d') if latest_time else '2025-01-01'
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    
-    # 3. 调用数据源API
-    return self.sync_minute_data(ts_code, start_date, end_date)
-```
-
-#### 2. 数据聚合策略
-```python
-def aggregate_data(self, ts_code, source_period='1min', target_period='5min'):
-    # 1. 获取源周期数据
-    source_data = StockMinuteData.get_data_by_time_range(ts_code, start_date, end_date, source_period)
-    
-    # 2. 使用pandas进行时间序列聚合
-    df = pd.DataFrame([data.to_dict() for data in source_data])
-    df.set_index('datetime', inplace=True)
-    
-    # 3. 按目标周期聚合 (OHLCV)
-    agg_data = df.resample('5T').agg({
-        'open': 'first',   # 开盘价取第一个
-        'high': 'max',     # 最高价取最大值
-        'low': 'min',      # 最低价取最小值
-        'close': 'last',   # 收盘价取最后一个
-        'volume': 'sum',   # 成交量求和
-        'amount': 'sum'    # 成交额求和
-    })
-    
-    # 4. 计算技术指标
-    agg_data['pct_chg'] = (agg_data['close'] / agg_data['close'].shift(1) - 1) * 100
-    
-    # 5. 批量入库
-    StockMinuteData.bulk_insert(aggregated_list)
-```
-
-### 错误处理和容错机制
-
-#### 1. 数据源切换
-```python
-def _fetch_minute_data_from_source(self, ts_code, start_date, end_date):
-    try:
-        # 优先使用Tushare Pro
-        if self.pro:
-            df = self.pro.stk_mins(ts_code=ts_code, start_date=start_date, end_date=end_date)
-            return df
-    except Exception as e:
-        logger.warning(f"Tushare获取失败: {e}, 切换到Baostock")
-        
-        # 降级到Baostock
-        try:
-            with self.minute_sync_service as sync_service:
-                return sync_service.get_stock_minute_data_bs(ts_code, start_date, end_date)
-        except Exception as e2:
-            logger.error(f"Baostock也获取失败: {e2}")
-            return pd.DataFrame()
-```
-
-#### 2. 数据验证
-```python
-def _convert_to_model_format(self, df, ts_code, period_type):
-    data_list = []
-    for _, row in df.iterrows():
-        try:
-            # 时间字段容错处理
-            if 'trade_date' in row:
-                trade_date = str(row['trade_date'])
-            else:
-                trade_date = datetime.now().strftime('%Y%m%d')
-            
-            # 价格字段容错处理
-            open_price = row.get('open', 0)
-            high_price = row.get('high', 0)
-            low_price = row.get('low', 0)
-            close_price = row.get('close', 0)
-            
-            # 数据有效性检查
-            if close_price <= 0:
-                continue
-                
-            data_list.append({...})
-        except Exception as e:
-            logger.warning(f"处理数据行失败: {e}, 跳过该行")
-    
-    return data_list
-```
-
-### 数据库设计优化
-
-#### 索引策略
-```python
-# 复合索引设计 (stock_minute_data表)
-__table_args__ = (
-    Index('idx_ts_code_datetime_period', 'ts_code', 'datetime', 'period_type'),  # 主查询索引
-    Index('idx_datetime_period', 'datetime', 'period_type'),                     # 时间范围查询
-    Index('idx_ts_code_period', 'ts_code', 'period_type'),                       # 股票周期查询
-)
-```
-
-#### 批量操作实现
-```python
-@classmethod
-def bulk_insert(cls, data_list):
-    """批量插入数据，提高性能"""
-    if not data_list:
-        return 0
-    
-    try:
-        # 使用SQLAlchemy的bulk_insert_mappings提高性能
-        db.session.bulk_insert_mappings(cls, data_list)
-        db.session.commit()
-        return len(data_list)
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"批量插入失败: {e}")
-        return 0
-
-@classmethod 
-def bulk_upsert(cls, data_list):
-    """批量更新插入，处理重复数据"""
-    success_count = 0
-    for data in data_list:
-        try:
-            # 检查是否存在
-            existing = cls.query.filter_by(
-                ts_code=data['ts_code'],
-                datetime=data['datetime'], 
-                period_type=data['period_type']
-            ).first()
-            
-            if existing:
-                # 更新现有记录
-                for key, value in data.items():
-                    setattr(existing, key, value)
-            else:
-                # 插入新记录
-                new_record = cls(**data)
-                db.session.add(new_record)
-            
-            success_count += 1
-        except Exception as e:
-            logger.warning(f"处理数据失败: {e}")
-    
-    db.session.commit()
-    return success_count
-```
-
-### 数据质量监控
-
-#### 数据完整性检查
-```python
-@classmethod
-def check_data_quality(cls, ts_code, period_type='1min', hours=24):
-    """检查数据质量和完整性"""
-    end_time = datetime.now()
-    start_time = end_time - timedelta(hours=hours)
-    
-    # 获取实际数据
-    actual_data = cls.query.filter(
-        cls.ts_code == ts_code,
-        cls.period_type == period_type,
-        cls.datetime >= start_time,
-        cls.datetime <= end_time
-    ).count()
-    
-    # 计算期望数据量 (交易时间: 9:30-11:30, 13:00-15:00)
-    trading_minutes_per_day = 240  # 4小时 * 60分钟
-    expected_data = trading_minutes_per_day * (hours / 24)
-    
-    if period_type == '5min':
-        expected_data = expected_data / 5
-    elif period_type == '15min':
-        expected_data = expected_data / 15
-    # ... 其他周期
-    
-    completeness = (actual_data / expected_data * 100) if expected_data > 0 else 0
-    
-    return {
-        'ts_code': ts_code,
-        'period_type': period_type,
-        'time_range': f'{start_time} - {end_time}',
-        'actual_count': actual_data,
-        'expected_count': int(expected_data),
-        'completeness': round(completeness, 2),
-        'status': 'good' if completeness >= 90 else 'warning' if completeness >= 70 else 'poor'
-    }
-```
-
-### 实时数据处理流程
-
-#### 1. 数据接收和预处理
-```python
-def process_realtime_tick(self, tick_data):
-    """处理实时tick数据"""
-    # 1. 数据验证
-    if not self._validate_tick_data(tick_data):
-        return False
-    
-    # 2. 数据清洗
-    cleaned_data = self._clean_tick_data(tick_data)
-    
-    # 3. 聚合到分钟K线
-    minute_bar = self._aggregate_to_minute_bar(cleaned_data)
-    
-    # 4. 存储到数据库
-    self._store_minute_bar(minute_bar)
-    
-    # 5. 触发实时计算
-    self._trigger_realtime_calculation(minute_bar)
-    
-    return True
-
-def _aggregate_to_minute_bar(self, tick_data):
-    """将tick数据聚合为分钟K线"""
-    current_minute = datetime.now().replace(second=0, microsecond=0)
-    
-    # 获取当前分钟的所有tick
-    minute_ticks = self._get_minute_ticks(tick_data['ts_code'], current_minute)
-    
-    if not minute_ticks:
-        return None
-    
-    # OHLCV聚合
-    return {
-        'ts_code': tick_data['ts_code'],
-        'datetime': current_minute,
-        'period_type': '1min',
-        'open': minute_ticks[0]['price'],      # 第一个tick价格
-        'high': max(t['price'] for t in minute_ticks),
-        'low': min(t['price'] for t in minute_ticks),
-        'close': minute_ticks[-1]['price'],    # 最后一个tick价格
-        'volume': sum(t['volume'] for t in minute_ticks),
-        'amount': sum(t['amount'] for t in minute_ticks)
-    }
-```
-
-#### 2. 多周期数据生成
-```python
-def generate_multi_period_bars(self, minute_bar):
-    """从1分钟K线生成多周期K线"""
-    periods = ['5min', '15min', '30min', '60min']
-    
-    for period in periods:
-        try:
-            # 获取当前周期的时间窗口
-            window_start = self._get_period_window_start(minute_bar['datetime'], period)
-            
-            # 获取窗口内的所有1分钟数据
-            window_data = StockMinuteData.query.filter(
-                StockMinuteData.ts_code == minute_bar['ts_code'],
-                StockMinuteData.datetime >= window_start,
-                StockMinuteData.datetime <= minute_bar['datetime'],
-                StockMinuteData.period_type == '1min'
-            ).order_by(StockMinuteData.datetime.asc()).all()
-            
-            if not window_data:
-                continue
-            
-            # 聚合计算
-            period_bar = {
-                'ts_code': minute_bar['ts_code'],
-                'datetime': window_start,
-                'period_type': period,
-                'open': window_data[0].open,
-                'high': max(d.high for d in window_data),
-                'low': min(d.low for d in window_data),
-                'close': window_data[-1].close,
-                'volume': sum(d.volume for d in window_data),
-                'amount': sum(d.amount for d in window_data)
-            }
-            
-            # 计算技术指标
-            period_bar['pre_close'] = self._get_previous_close(minute_bar['ts_code'], window_start, period)
-            period_bar['change'] = period_bar['close'] - period_bar['pre_close']
-            period_bar['pct_chg'] = (period_bar['change'] / period_bar['pre_close'] * 100) if period_bar['pre_close'] > 0 else 0
-            
-            # 存储周期K线
-            self._upsert_period_bar(period_bar)
-            
-        except Exception as e:
-            logger.error(f"生成{period}周期数据失败: {e}")
-
-def _get_period_window_start(self, current_time, period):
-    """获取周期窗口开始时间"""
-    if period == '5min':
-        # 5分钟对齐: 9:30, 9:35, 9:40...
-        minute = current_time.minute
-        aligned_minute = (minute // 5) * 5
-        return current_time.replace(minute=aligned_minute, second=0, microsecond=0)
-    elif period == '15min':
-        # 15分钟对齐: 9:30, 9:45, 10:00...
-        minute = current_time.minute
-        aligned_minute = (minute // 15) * 15
-        return current_time.replace(minute=aligned_minute, second=0, microsecond=0)
-    # ... 其他周期类似处理
-```
-
-### 性能优化策略
-
-#### 1. 批量操作
-- 使用 `bulk_insert()` 批量插入数据
-- 分批处理大量股票数据 (batch_size=1000)
-- 使用事务确保数据一致性
-
-#### 2. 缓存机制
-```python
-# Redis缓存配置
-CACHE_CONFIG = {
-    'stock_basic': {'expire': 1800, 'key_prefix': 'stock_basic'},      # 30分钟
-    'daily_history': {'expire': 300, 'key_prefix': 'daily_history'},   # 5分钟
-    'realtime_price': {'expire': 60, 'key_prefix': 'realtime_price'},  # 1分钟
-}
-
-# 缓存装饰器使用
-@cached(expire=300, key_prefix='minute_data')
-def get_latest_minute_data(ts_code, period_type, limit):
-    return StockMinuteData.get_latest_data(ts_code, period_type, limit)
-```
-
-#### 3. 异步处理
-```python
-# 使用Celery进行异步任务处理
-@celery.task
-def sync_stock_data_async(ts_code, start_date, end_date):
-    """异步同步股票数据"""
-    data_manager = RealtimeDataManager()
-    return data_manager.sync_minute_data(ts_code, start_date, end_date)
-
-@celery.task
-def batch_sync_stocks_async(stock_list, period_type):
-    """批量异步同步多只股票"""
-    results = []
-    for ts_code in stock_list:
-        result = sync_stock_data_async.delay(ts_code, None, None)
-        results.append(result)
-    return results
-```
-
-#### 4. 数据库连接池优化
-```python
-# SQLAlchemy连接池配置
-SQLALCHEMY_ENGINE_OPTIONS = {
-    'pool_size': 20,           # 连接池大小
-    'pool_recycle': 3600,      # 连接回收时间
-    'pool_pre_ping': True,     # 连接预检查
-    'max_overflow': 30,        # 最大溢出连接数
-    'pool_timeout': 30         # 获取连接超时时间
-}
-```
-
-## 📊 内置因子
-
-### 动量因子
-- `momentum_1d`: 1日动量
-- `momentum_5d`: 5日动量
-- `momentum_20d`: 20日动量
-
-### 波动率因子
-- `volatility_20d`: 20日波动率
-
-### 技术指标
-- `rsi_14`: RSI相对强弱指标
-
-### 成交量因子
-- `turnover_rate`: 换手率
-
-### 基本面因子
-- `pe_ratio`: 市盈率
-- `pb_ratio`: 市净率
-- `roe`: 净资产收益率
-- `debt_ratio`: 资产负债率
-- `current_ratio`: 流动比率
-- `gross_margin`: 毛利率
 
 ## 🔧 配置说明
 
@@ -900,145 +365,101 @@ SQLALCHEMY_ENGINE_OPTIONS = {
 在 `config.py` 中修改数据库连接：
 
 ```python
-# SQLite (默认)
-SQLALCHEMY_DATABASE_URI = 'sqlite:///stock_analysis.db'
+# MySQL配置
+DB_HOST = 'localhost'
+DB_USER = 'root'
+DB_PASSWORD = 'your_password'
+DB_NAME = 'stock'
+SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
+```
 
-# MySQL
-SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://user:password@localhost/stock_analysis'
+### Tushare配置
+```python
+# 在前端界面配置，或通过环境变量
+TUSHARE_TOKEN = "your_tushare_token_here"
 ```
 
 ### 日志配置
 ```python
 LOG_LEVEL = 'INFO'
-LOG_FILE = 'logs/app.log'
+LOG_FILE = 'logs/stock_analysis.log'
 ```
-
-## 🧪 运行演示
-
-系统提供了完整的功能演示：
-
-```bash
-# 运行完整演示
-python examples/complete_system_example.py
-
-# 或通过启动器运行
-python run_system.py
-# 选择 "5. 运行系统演示"
-```
-
-![系统演示](./images/1-22.png)
-
-演示内容包括：
-1. 因子管理演示
-2. 模型管理演示
-3. 股票选择演示
-4. 组合优化演示
-5. 集成选股和优化演示
-6. 回测验证演示
-7. 分析功能演示
-
-## 📈 性能指标
-
-系统支持的回测指标：
-- 总收益率
-- 年化收益率
-- 年化波动率
-- 夏普比率
-- 最大回撤
-- 胜率
-- 卡尔玛比率
-
-## 🛠️ 开发指南
-
-### 添加自定义因子
-1. 在因子管理界面创建因子定义
-2. 编写因子计算公式
-3. 测试因子计算结果
-
-### 扩展机器学习模型
-1. 在 `MLModelManager` 中添加新算法
-2. 实现训练和预测方法
-3. 更新API接口
-
-### 添加优化算法
-1. 在 `PortfolioOptimizer` 中实现新方法
-2. 添加约束条件支持
-3. 测试优化结果
 
 ## 🐛 故障排除
 
-### ⚠️ 依赖包兼容性问题
-
-如果遇到 `empyrical` 或 `TA-Lib` 安装失败，请使用修复版启动脚本：
-
-```bash
-# 使用修复版快速启动（推荐）
-python quick_start_fixed.py
-
-# 或使用最小化依赖
-pip install -r requirements_minimal.txt
-```
-
-详细解决方案请查看：[安装指南](INSTALL_GUIDE.md)
-
 ### 常见问题
 
-1. **依赖包安装失败**
+1. **数据库连接失败**
    ```bash
-   # 方案1：使用修复版启动脚本
-   python quick_start_fixed.py
-   
-   # 方案2：手动安装核心依赖
-   pip install Flask pandas numpy scikit-learn
-   
-   # 方案3：使用国内镜像
-   pip install -r requirements_minimal.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+   # 确认MySQL服务已启动
+   # 检查config.py中的数据库配置
+   # 创建数据库
+   CREATE DATABASE IF NOT EXISTS stock CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 
-2. **Python版本兼容性**
-   - 推荐使用 Python 3.8-3.11
-   - Python 3.12 可能有部分包兼容性问题
-   - 使用修复版脚本可以自动处理
+2. **前端无法访问后端API**
+   ```bash
+   # 确认后端已启动在5000端口
+   # 确认前端运行在5173端口
+   # 检查CORS配置
+   ```
 
-3. **数据库连接失败**
-   - 检查数据库配置
-   - 确保数据库服务运行
-   - 验证连接权限
+3. **Tushare Token无效**
+   ```bash
+   # 确认Token已正确复制
+   # 在Tushare官网验证Token状态
+   # 检查积分余额
+   ```
 
-4. **因子计算失败**
-   - 检查数据是否存在
-   - 验证因子公式语法
-   - 查看日志错误信息
-
-5. **模型训练失败**
-   - 确保有足够的训练数据
-   - 检查因子数据完整性
-   - 调整模型参数
+4. **WebSocket连接失败**
+   ```bash
+   # 安装eventlet: pip install eventlet
+   # 使用python run.py启动（不是flask run）
+   # 检查防火墙设置
+   ```
 
 ## 📝 更新日志
 
-### v1.0.0 (2025-06-01)
-- 完整的多因子选股系统
-- 支持因子管理和计算
+### v2.0.0 (2025-10-23) - 重构版本
+- ✅ **架构重构**: 从多因子选股系统重构为实时股票异动检测与预警系统
+- ✅ **前后端分离**: React + Flask架构，替代原有的模板系统
+- ✅ **数据源集成**: 完整的Tushare Pro API集成，支持2120积分权限
+- ✅ **预警系统**: 完整的预警规则和记录系统
+- ✅ **现代化界面**: React 18 + Tailwind CSS + Shadcn/UI
+- ✅ **API标准化**: RESTful API设计，完整的CRUD操作
+- ✅ **数据库优化**: MySQL表结构优化和索引设计
+
+### v1.0.0 (2024-06-01) - 初始版本
+- 多因子选股系统基础功能
 - 机器学习模型集成
-- 组合优化功能
-- 回测验证引擎
-- Web界面和API接口
+- 组合优化和回测功能
+
+## 📚 相关文档
+
+- [快速启动指南](./实时股票异动检测与智能预警系统核心功能设计/快速启动指南.md)
+- [API接口文档](./实时股票异动检测与智能预警系统核心功能设计/API_ROUTES_SUMMARY.md)
+- [系统设计文档](./实时股票异动检测与智能预警系统核心功能设计/基于WebSocket的实时股票异动检测与智能预警系统.md)
+- [前后端分离架构](./实时股票异动检测与智能预警系统核心功能设计/FRONTEND_BACKEND_SEPARATION.md)
+
+## 🤝 贡献指南
+
+欢迎提交Issue和Pull Request来改进这个项目：
+
+1. **Bug报告**: 请详细描述问题和复现步骤
+2. **功能建议**: 请说明功能需求和使用场景
+3. **代码贡献**: 请遵循项目的代码规范
+4. **文档改进**: 帮助完善项目文档
 
 ## 📄 许可证
 
 本项目采用 MIT 许可证。
 
-## 🤝 贡献
-
-欢迎提交Issue和Pull Request来改进这个项目。
-
 ## 📞 联系方式
 
 如有问题或建议，请通过以下方式联系：
-- 提交Issue
+- 提交Issue到项目仓库
 - 发送邮件：39189996@qq.com
 
 ---
 
-**多因子选股系统** - 让量化投资更简单！ 
+**实时股票异动检测与智能预警系统** - 让股票监控更智能！ 🚀
