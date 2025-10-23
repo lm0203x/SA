@@ -458,7 +458,7 @@ LOG_FILE = 'logs/stock_analysis.log'
 
 如有问题或建议，请通过以下方式联系：
 - 提交Issue到项目仓库
-- 发送邮件：39189996@qq.com
+- 发送邮件：2389934506@qq.com
 
 ---
 
