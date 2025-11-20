@@ -281,8 +281,60 @@ export async function deleteAlertRule(id) {
 /**
  * 获取预警记录
  */
-export async function getAlertRecords(limit = 50) {
-  return apiRequest(`/alerts?limit=${limit}`);
+export async function getAlertRecords(params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const endpoint = queryString ? `/alerts?${queryString}` : '/alerts';
+  return apiRequest(endpoint);
+}
+
+/**
+ * 解决预警记录
+ */
+export async function resolveAlertRecord(alertId) {
+  return apiRequest(`/alerts/${alertId}/resolve`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 创建预警记录
+ */
+export async function createAlertRecord(data) {
+  return apiRequest('/alerts', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 获取预警统计信息
+ */
+export async function getAlertStats() {
+  return apiRequest('/alert/stats');
+}
+
+/**
+ * 获取预警配置选项
+ */
+export async function getAlertOptions() {
+  return apiRequest('/alert/options');
+}
+
+/**
+ * 搜索股票
+ */
+export async function searchStocks(query, limit = 20) {
+  return apiRequest(`/alert/stocks/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+}
+
+/**
+ * 同步股票数据
+ */
+export async function syncAlertStocks(forceUpdate = false) {
+  return apiRequest('/alert/sync-stocks', {
+    method: 'POST',
+    body: JSON.stringify({ force_update }),
+  });
 }
 
 // ==================== 预警触发相关 ====================
@@ -350,8 +402,16 @@ export default {
   createAlertRule,
   updateAlertRule,
   deleteAlertRule,
+
+  // 预警记录
   getAlertRecords,
-  
+  resolveAlertRecord,
+  createAlertRecord,
+  getAlertStats,
+  getAlertOptions,
+  searchStocks,
+  syncAlertStocks,
+
   // 预警触发
   triggerAlertCheck,
   getTriggerStats,

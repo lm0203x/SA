@@ -11,6 +11,7 @@ import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Data
 import DataSourceConfig from '@/components/DataSourceConfig';
 import WatchlistManager from '@/components/WatchlistManager';
 import AlertRules from '@/components/AlertRules';
+import AlertRecords from '@/components/AlertRecords';
 
 
 const StockDashboard = () => {
@@ -85,27 +86,7 @@ const StockDashboard = () => {
 
           {/* 预警记录页面 */}
           <TabsContent value="alerts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>预警记录</CardTitle>
-                <CardDescription>查看最近的股票预警信息</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <AlertTriangle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">预警记录功能开发中...</h3>
-                  <p className="text-gray-500 mb-4">
-                    将基于真实的股票数据生成智能预警记录
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>• 价格异动预警</div>
-                    <div>• 成交量异动预警</div>
-                    <div>• 技术指标预警</div>
-                    <div>• 资金流向预警</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AlertRecords />
           </TabsContent>
 
 

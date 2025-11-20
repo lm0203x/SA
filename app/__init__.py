@@ -40,48 +40,43 @@ def create_app(config_name='default'):
     
     # ==================== 注册API蓝图 ====================
     # 核心API - 为前端React应用提供数据
-    from app.api import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+
+    # 直接创建API蓝图，避免循环导入
+    from flask import Blueprint
+    api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+    # 延迟导入和注册路由
+    def register_api_routes():
+        """延迟注册API路由以避免循环导入"""
+        # 导入并注册路由模块
+        from app.api import datasource_routes, stock_routes, alert_routes, watchlist_routes
+
+        # 注册webhook路由（使用函数式避免循环导入）
+        from app.api import webhook_routes
+        webhook_routes.register_webhook_routes(api_bp)
+
+    # 立即注册路由
+    register_api_routes()
+
+    app.register_blueprint(api_bp)
     
-    # 实时分析API
-    from app.api.realtime_analysis import realtime_analysis_bp
-    from app.api.realtime_indicators import realtime_indicators_bp
-    from app.api.realtime_signals import realtime_signals_bp
-    from app.api.realtime_monitor import realtime_monitor_bp
-    from app.api.realtime_risk import realtime_risk_bp
-    from app.api.realtime_report import realtime_report_bp
-    from app.api.websocket_api import websocket_api_bp
+    # 可选的高级API（如果需要可以启用）
+    # 注意：这些模块已被删除，如需使用请先恢复对应文件
+    # from app.api.realtime_analysis import realtime_analysis_bp
+    # from app.api.realtime_indicators import realtime_indicators_bp
+    # from app.api.realtime_signals import realtime_signals_bp
+    # from app.api.realtime_monitor import realtime_monitor_bp
+    # from app.api.realtime_risk import realtime_risk_bp
+    # from app.api.realtime_report import realtime_report_bp
+    # from app.api.websocket_api import websocket_api_bp
+    # from app.api.ml_factor_api import ml_factor_bp
+    # from app.api.test_api import test_bp
     
-    app.register_blueprint(realtime_analysis_bp)
-    app.register_blueprint(realtime_indicators_bp, url_prefix='/api/realtime-analysis/indicators')
-    app.register_blueprint(realtime_signals_bp, url_prefix='/api/realtime-analysis/signals')
-    app.register_blueprint(realtime_monitor_bp, url_prefix='/api/realtime-analysis/monitor')
-    app.register_blueprint(realtime_risk_bp, url_prefix='/api/realtime-analysis/risk')
-    app.register_blueprint(realtime_report_bp, url_prefix='/api/realtime-analysis/reports')
-    app.register_blueprint(websocket_api_bp, url_prefix='/api/websocket')
-    
-    # 机器学习API
-    from app.api.ml_factor_api import ml_factor_bp
-    app.register_blueprint(ml_factor_bp)
-    
-    # Text2SQL API（已禁用 - 模块不存在）
-    # from app.api.text2sql_api import text2sql_bp
-    # app.register_blueprint(text2sql_bp)
-    
-    # 测试API
-    from app.api.test_api import test_bp
-    app.register_blueprint(test_bp, url_prefix='/api')
-    
-    # ==================== 旧版模板路由（可选保留用于调试）====================
-    # 如果不需要旧的HTML模板页面，可以注释掉以下部分
+    # ==================== 旧版模板路由（已禁用）====================
+    # 旧版HTML模板路由已被删除，系统现在使用纯API模式
+    # 如需恢复旧版功能，请先恢复对应的路由文件
     if app.config.get('ENABLE_LEGACY_TEMPLATES', False):
-        from app.routes.ml_factor_routes import ml_factor_routes
-        from app.routes.realtime_analysis_routes import realtime_analysis_routes
-        from app.main import main_bp
-        
-        app.register_blueprint(ml_factor_routes)
-        app.register_blueprint(realtime_analysis_routes)
-        app.register_blueprint(main_bp)
+        app.logger.warning("旧版模板路由已被禁用，请使用前端React应用访问系统")
     
     # ==================== WebSocket事件处理器 ====================
     from app.websocket import websocket_events

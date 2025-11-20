@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from sqlalchemy import and_, or_, desc
+import asyncio
 
 from app.extensions import db
 from app.models.alert_rule import AlertRule
@@ -15,6 +16,8 @@ from app.models.stock_basic import StockBasic
 from app.models.stock_daily_history import StockDailyHistory
 from app.models.stock_daily_basic import StockDailyBasic
 from app.models.stock_moneyflow import StockMoneyflow
+from app.models.webhook_config import WebhookConfig
+from app.services.webhook_service import send_webhook_notification
 
 logger = logging.getLogger(__name__)
 
@@ -350,22 +353,22 @@ class AlertTriggerEngine:
             logger.error(f"检查重复预警失败: {str(e)}")
             return True  # 出错时默认创建预警
     
-    def _create_alert_record(self, rule: AlertRule, result: Dict[str, Any], 
+    def _create_alert_record(self, rule: AlertRule, result: Dict[str, Any],
                            stock_data: Dict[str, Any]) -> Optional[RiskAlert]:
         """创建预警记录"""
         try:
             # 生成预警消息
             alert_message = rule.generate_alert_message(
-                result['current_value'], 
+                result['current_value'],
                 stock_data.get('name')
             )
-            
+
             # 获取当前价格
             current_price = None
             daily_data = stock_data.get('daily_data')
             if daily_data:
                 current_price = daily_data.close
-            
+
             # 创建预警记录
             alert = RiskAlert.create_alert(
                 ts_code=rule.ts_code,
@@ -376,15 +379,65 @@ class AlertTriggerEngine:
                 threshold_value=rule.threshold_value,
                 current_price=current_price
             )
-            
+
             # 更新规则触发统计
             rule.record_trigger()
-            
+
+            # 发送Webhook通知
+            self._send_webhook_notifications(alert, stock_data)
+
             return alert
-            
+
         except Exception as e:
             logger.error(f"创建预警记录失败: {str(e)}")
             return None
+
+    def _send_webhook_notifications(self, alert: RiskAlert, stock_data: Dict[str, Any]):
+        """发送Webhook通知"""
+        try:
+            # 获取启用的Webhook配置
+            webhooks = WebhookConfig.get_enabled_configs()
+
+            if not webhooks:
+                logger.debug("没有启用的Webhook配置，跳过通知发送")
+                return
+
+            # 构建预警数据
+            alert_data = {
+                'ts_code': alert.ts_code,
+                'stock_name': stock_data.get('name', ''),
+                'alert_level': alert.alert_level,
+                'alert_type': alert.alert_type,
+                'alert_message': alert.alert_message,
+                'current_price': alert.current_price,
+                'threshold_value': alert.threshold_value,
+                'risk_value': alert.risk_value,
+                'created_at': alert.created_at.isoformat() if alert.created_at else datetime.now().isoformat()
+            }
+
+            # 异步发送Webhook通知
+            asyncio.create_task(self._async_send_webhooks(webhooks, alert_data))
+
+        except Exception as e:
+            logger.error(f"发送Webhook通知失败: {str(e)}")
+
+    async def _async_send_webhooks(self, webhooks: List[WebhookConfig], alert_data: Dict[str, Any]):
+        """异步发送多个Webhook通知"""
+        for webhook in webhooks:
+            try:
+                # 发送Webhook通知
+                result = await send_webhook_notification(webhook.to_dict(), alert_data)
+
+                if result.get('success'):
+                    webhook.record_success()
+                    logger.info(f"Webhook通知发送成功: {webhook.name}")
+                else:
+                    webhook.record_failure()
+                    logger.error(f"Webhook通知发送失败: {webhook.name} - {result.get('message')}")
+
+            except Exception as e:
+                webhook.record_failure()
+                logger.error(f"Webhook通知发送异常: {webhook.name} - {str(e)}")
     
     def get_trigger_stats(self, days: int = 7) -> Dict[str, Any]:
         """获取触发统计信息"""
