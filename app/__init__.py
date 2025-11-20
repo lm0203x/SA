@@ -40,8 +40,25 @@ def create_app(config_name='default'):
     
     # ==================== 注册API蓝图 ====================
     # 核心API - 为前端React应用提供数据
-    from app.api import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+
+    # 直接创建API蓝图，避免循环导入
+    from flask import Blueprint
+    api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+    # 延迟导入和注册路由
+    def register_api_routes():
+        """延迟注册API路由以避免循环导入"""
+        # 导入并注册路由模块
+        from app.api import datasource_routes, stock_routes, alert_routes, watchlist_routes
+
+        # 注册webhook路由（使用函数式避免循环导入）
+        from app.api import webhook_routes
+        webhook_routes.register_webhook_routes(api_bp)
+
+    # 立即注册路由
+    register_api_routes()
+
+    app.register_blueprint(api_bp)
     
     # 可选的高级API（如果需要可以启用）
     # 注意：这些模块已被删除，如需使用请先恢复对应文件
