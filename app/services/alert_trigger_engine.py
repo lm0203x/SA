@@ -350,38 +350,50 @@ class AlertTriggerEngine:
             logger.error(f"检查重复预警失败: {str(e)}")
             return True  # 出错时默认创建预警
     
-    def _create_alert_record(self, rule: AlertRule, result: Dict[str, Any], 
+    def _create_alert_record(self, rule: AlertRule, result: Dict[str, Any],
                            stock_data: Dict[str, Any]) -> Optional[RiskAlert]:
         """创建预警记录"""
         try:
             # 生成预警消息
             alert_message = rule.generate_alert_message(
-                result['current_value'], 
+                result['current_value'],
                 stock_data.get('name')
             )
-            
+
             # 获取当前价格
             current_price = None
             daily_data = stock_data.get('daily_data')
             if daily_data:
                 current_price = daily_data.close
-            
+
+            # 准备扩展数据
+            extra_data = {
+                'trigger_message': result.get('message', ''),
+                'stock_name': stock_data.get('name', ''),
+                'stock_industry': stock_data.get('industry', ''),
+                'trigger_time': datetime.utcnow().isoformat(),
+                'rule_name': rule.rule_name
+            }
+
             # 创建预警记录
             alert = RiskAlert.create_alert(
                 ts_code=rule.ts_code,
                 alert_type=rule.rule_type,
                 alert_level=rule.alert_level,
                 alert_message=alert_message,
+                rule_id=rule.id,
                 risk_value=result['current_value'],
                 threshold_value=rule.threshold_value,
-                current_price=current_price
+                current_price=current_price,
+                trigger_source='auto',
+                extra_data=extra_data
             )
-            
+
             # 更新规则触发统计
             rule.record_trigger()
-            
+
             return alert
-            
+
         except Exception as e:
             logger.error(f"创建预警记录失败: {str(e)}")
             return None
