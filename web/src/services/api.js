@@ -279,10 +279,55 @@ export async function deleteAlertRule(id) {
 }
 
 /**
+ * 获取预警配置选项
+ */
+export async function getAlertOptions() {
+  return apiRequest('/alerts/options');
+}
+
+/**
  * 获取预警记录
  */
-export async function getAlertRecords(limit = 50) {
-  return apiRequest(`/alerts?limit=${limit}`);
+export async function getAlertRecords(params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  const endpoint = queryString ? `/alerts?${queryString}` : '/alerts';
+  return apiRequest(endpoint);
+}
+
+/**
+ * 获取预警统计信息
+ */
+export async function getAlertStats(days = 7) {
+  return apiRequest(`/alerts/stats?days=${days}`);
+}
+
+/**
+ * 解决预警
+ */
+export async function resolveAlert(id, note = '') {
+  return apiRequest(`/alerts/${id}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ resolution_note: note })
+  });
+}
+
+/**
+ * 忽略预警
+ */
+export async function ignoreAlert(id, note = '') {
+  return apiRequest(`/alerts/${id}/ignore`, {
+    method: 'POST',
+    body: JSON.stringify({ ignore_note: note })
+  });
+}
+
+/**
+ * 重新激活预警
+ */
+export async function reactivateAlert(id) {
+  return apiRequest(`/alerts/${id}/reactivate`, {
+    method: 'POST'
+  });
 }
 
 // ==================== 预警触发相关 ====================
@@ -350,7 +395,12 @@ export default {
   createAlertRule,
   updateAlertRule,
   deleteAlertRule,
+  getAlertOptions,
   getAlertRecords,
+  getAlertStats,
+  resolveAlert,
+  ignoreAlert,
+  reactivateAlert,
   
   // 预警触发
   triggerAlertCheck,
