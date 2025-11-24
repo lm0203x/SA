@@ -70,7 +70,11 @@ const StockDashboard = () => {
           </TabsList>
 
           {/* 股票行情页面（自选股） */}
-          <TabsContent value="stocks" className="space-y-6">
+          <TabsContent
+            value="stocks"
+            className="space-y-6 data-[state=inactive]:hidden"
+            forceMount={true}
+          >
             <WatchlistManager />
           </TabsContent>
 

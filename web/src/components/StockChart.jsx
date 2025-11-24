@@ -4,16 +4,16 @@
  */
 
 import React, { useState } from 'react';
-import { 
-  ComposedChart, 
-  Line, 
+import {
+  ComposedChart,
+  Line,
   Bar,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    
+
     return (
       <div className="bg-white border border-gray-300 p-3 rounded shadow-lg">
         <p className="font-semibold mb-2">{data.trade_date}</p>
@@ -50,18 +50,22 @@ const CustomTooltip = ({ active, payload }) => {
  */
 export default function StockChart({ data, stockInfo, loading }) {
   const [timeframe, setTimeframe] = useState('daily');
-  
+  const [proMode, setProMode] = useState(false);
+
   // 时间周期选项
   const timeframeOptions = [
     { key: 'daily', label: '日K', enabled: true },
-    { key: 'weekly', label: '周K', enabled: false },
-    { key: 'monthly', label: '月K', enabled: false },
-    { key: '60min', label: '60分钟', enabled: false },
-    { key: '30min', label: '30分钟', enabled: false },
-    { key: '15min', label: '15分钟', enabled: false },
-    { key: '5min', label: '5分钟', enabled: false },
-    { key: '1min', label: '1分钟', enabled: false }
+    { key: 'weekly', label: '周K', enabled: proMode },
+    { key: 'monthly', label: '月K', enabled: proMode },
+    { key: '60min', label: '60分钟', enabled: proMode },
+    { key: '30min', label: '30分钟', enabled: proMode },
+    { key: '15min', label: '15分钟', enabled: proMode },
+    { key: '5min', label: '5分钟', enabled: proMode },
+    { key: '1min', label: '1分钟', enabled: proMode }
   ];
+
+  // ... existing loading check ...
+
   if (loading) {
     return (
       <Card className="p-6">
@@ -87,6 +91,8 @@ export default function StockChart({ data, stockInfo, loading }) {
       </Card>
     );
   }
+
+  // ... existing data processing ...
 
   // 数据预处理：按日期排序（从旧到新）
   const sortedData = [...data].sort((a, b) => {
@@ -118,40 +124,50 @@ export default function StockChart({ data, stockInfo, loading }) {
                 <p className="text-2xl font-bold">
                   {sortedData[sortedData.length - 1]?.close?.toFixed(2)}
                 </p>
-                <p className={`text-sm font-medium ${
-                  sortedData[sortedData.length - 1]?.pct_chg >= 0 
-                    ? 'text-red-600' 
-                    : 'text-green-600'
-                }`}>
+                <p className={`text-sm font-medium ${sortedData[sortedData.length - 1]?.pct_chg >= 0
+                  ? 'text-red-600'
+                  : 'text-green-600'
+                  }`}>
                   {sortedData[sortedData.length - 1]?.pct_chg >= 0 ? '+' : ''}
                   {sortedData[sortedData.length - 1]?.pct_chg?.toFixed(2)}%
                 </p>
               </div>
             )}
           </div>
-          
+
           {/* 时间周期切换按钮 */}
-          <div className="flex flex-wrap gap-2">
-            {timeframeOptions.map((option) => (
-              <Button
-                key={option.key}
-                size="sm"
-                variant={timeframe === option.key ? "default" : "outline"}
-                disabled={!option.enabled}
-                onClick={() => option.enabled && setTimeframe(option.key)}
-                className={`relative ${!option.enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {option.label}
-                {!option.enabled && (
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4 min-w-0"
-                  >
-                    敬请期待
-                  </Badge>
-                )}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {timeframeOptions.map((option) => (
+                <Button
+                  key={option.key}
+                  size="sm"
+                  variant={timeframe === option.key ? "default" : "outline"}
+                  disabled={!option.enabled}
+                  onClick={() => option.enabled && setTimeframe(option.key)}
+                  className={`relative ${!option.enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {option.label}
+                  {!option.enabled && !proMode && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4 min-w-0"
+                    >
+                      Pro
+                    </Badge>
+                  )}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              size="sm"
+              variant={proMode ? "secondary" : "outline"}
+              onClick={() => setProMode(!proMode)}
+              className="ml-auto"
+            >
+              {proMode ? '已开启高级权限' : '开启高级权限'}
+            </Button>
           </div>
         </div>
       )}
@@ -163,42 +179,42 @@ export default function StockChart({ data, stockInfo, loading }) {
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          
-          <XAxis 
-            dataKey="trade_date" 
+
+          <XAxis
+            dataKey="trade_date"
             tickFormatter={formatDate}
             tick={{ fontSize: 12 }}
             interval="preserveStartEnd"
           />
-          
+
           {/* 价格Y轴 */}
-          <YAxis 
+          <YAxis
             yAxisId="price"
             domain={['auto', 'auto']}
             tick={{ fontSize: 12 }}
             tickFormatter={(value) => value.toFixed(2)}
           />
-          
+
           {/* 成交量Y轴 */}
-          <YAxis 
+          <YAxis
             yAxisId="volume"
             orientation="right"
             domain={[0, maxVolume * 1.2]}
             tick={{ fontSize: 12 }}
             tickFormatter={(value) => `${(value / 10000).toFixed(0)}万`}
           />
-          
+
           <Tooltip content={<CustomTooltip />} />
-          
-          <Legend 
+
+          <Legend
             wrapperStyle={{ paddingTop: '20px' }}
             iconType="line"
           />
 
           {/* 成交量柱状图 */}
-          <Bar 
+          <Bar
             yAxisId="volume"
-            dataKey="vol" 
+            dataKey="vol"
             name="成交量"
             fill="#94a3b8"
             opacity={0.3}
@@ -206,35 +222,35 @@ export default function StockChart({ data, stockInfo, loading }) {
           />
 
           {/* 收盘价折线 */}
-          <Line 
+          <Line
             yAxisId="price"
-            type="monotone" 
-            dataKey="close" 
+            type="monotone"
+            dataKey="close"
             name="收盘价"
-            stroke="#3b82f6" 
+            stroke="#3b82f6"
             strokeWidth={2}
             dot={false}
           />
 
           {/* 最高价折线 */}
-          <Line 
+          <Line
             yAxisId="price"
-            type="monotone" 
-            dataKey="high" 
+            type="monotone"
+            dataKey="high"
             name="最高价"
-            stroke="#ef4444" 
+            stroke="#ef4444"
             strokeWidth={1}
             strokeDasharray="3 3"
             dot={false}
           />
 
           {/* 最低价折线 */}
-          <Line 
+          <Line
             yAxisId="price"
-            type="monotone" 
-            dataKey="low" 
+            type="monotone"
+            dataKey="low"
             name="最低价"
-            stroke="#10b981" 
+            stroke="#10b981"
             strokeWidth={1}
             strokeDasharray="3 3"
             dot={false}
