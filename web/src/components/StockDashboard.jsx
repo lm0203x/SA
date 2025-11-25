@@ -12,6 +12,7 @@ import DataSourceConfig from '@/components/DataSourceConfig';
 import WatchlistManager from '@/components/WatchlistManager';
 import AlertRules from '@/components/AlertRules';
 import AlertRecords from '@/components/AlertRecords';
+import AIRecommendation from '@/components/AIRecommendation';
 
 
 const StockDashboard = () => {
@@ -65,7 +66,7 @@ const StockDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="strategy" className="flex items-center space-x-2">
               <Brain className="w-4 h-4" />
-              <span>策略配置</span>
+              <span>智能推荐</span>
             </TabsTrigger>
           </TabsList>
 
@@ -94,30 +95,9 @@ const StockDashboard = () => {
           </TabsContent>
 
 
-          {/* 策略配置页面 */}
+          {/* 智能推荐页面 */}
           <TabsContent value="strategy" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>策略配置</CardTitle>
-                <CardDescription>配置智能分析策略和风险控制参数</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Brain className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">策略配置功能开发中...</h3>
-                  <p className="text-gray-500 mb-4">
-                    将支持多种量化分析策略和智能预警算法
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>• 价格动量策略</div>
-                    <div>• 均值回归策略</div>
-                    <div>• 成交量分析策略</div>
-                    <div>• 技术指标策略</div>
-                    <div>• 风险控制参数</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AIRecommendation />
           </TabsContent>
 
           {/* Webhook配置页面 */}
