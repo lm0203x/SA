@@ -358,6 +358,76 @@ export async function triggerStockCheck(tsCode) {
   });
 }
 
+// ==================== AI配置API ====================
+
+/**
+ * 获取所有AI配置
+ */
+export async function getAIConfigs() {
+  return apiRequest('/ai-configs');
+}
+
+/**
+ * 创建AI配置
+ */
+export async function createAIConfig(data) {
+  return apiRequest('/ai-configs', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 更新AI配置
+ */
+export async function updateAIConfig(id, data) {
+  return apiRequest(`/ai-configs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 删除AI配置
+ */
+export async function deleteAIConfig(id) {
+  return apiRequest(`/ai-configs/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 测试AI配置连接
+ */
+export async function testAIConfigConnection(id) {
+  return apiRequest(`/ai-configs/${id}/test`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 设置默认AI配置
+ */
+export async function setDefaultAIConfig(id) {
+  return apiRequest(`/ai-configs/${id}/set-default`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 获取支持的AI配置类型
+ */
+export async function getAIConfigTypes() {
+  return apiRequest('/ai-configs/types');
+}
+
+/**
+ * 获取当前激活的AI配置
+ */
+export async function getActiveAIConfig() {
+  return apiRequest('/ai-configs/active');
+}
+
 // ==================== 导出所有API ====================
 
 export default {
@@ -368,6 +438,16 @@ export default {
   deleteDataSource,
   testDataSourceConnection,
   getActiveDataSource,
+  
+  // AI配置
+  getAIConfigs,
+  createAIConfig,
+  updateAIConfig,
+  deleteAIConfig,
+  testAIConfigConnection,
+  setDefaultAIConfig,
+  getAIConfigTypes,
+  getActiveAIConfig,
   
   // 股票数据
   getStocks,

@@ -74,6 +74,23 @@ class Config:
         }
     }
 
+    # AI股票分析配置
+    AI_CONFIG = {
+        'provider': os.getenv('AI_PROVIDER', 'tongyi'),  # tongyi/openai/ollama
+        'tongyi': {
+            'api_key': os.getenv('DASHSCOPE_API_KEY', ''),
+            'model': os.getenv('TONGYI_MODEL', 'qwen-plus'),
+            'base_url': 'https://dashscope.aliyuncs.com/api/v1',
+            'timeout': int(os.getenv('AI_TIMEOUT', 30))
+        },
+        'openai': {
+            'api_key': os.getenv('OPENAI_API_KEY', ''),
+            'model': os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),
+            'base_url': os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+            'timeout': int(os.getenv('AI_TIMEOUT', 30))
+        }
+    }
+
 class DevelopmentConfig(Config):
     """开发环境配置"""
     DEBUG = True
