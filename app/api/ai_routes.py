@@ -69,6 +69,8 @@ def get_stock_recommendation():
         # AI分析
         try:
             analyzer = get_ai_analyzer()
+            # 每次分析前重新加载配置，确保使用最新的配置（如timeout）
+            analyzer.reload_config()
             result = analyzer.analyze_stock(ts_code, stock_info.name, stock_data)
             response_time = (datetime.utcnow() - start_time).total_seconds()
 

@@ -5,11 +5,9 @@ AI股票分析服务
 
 import requests
 import json
-import logging
+from loguru import logger
 from datetime import datetime
 from flask import current_app
-
-logger = logging.getLogger(__name__)
 
 
 class AIStockAnalyzer:
@@ -276,7 +274,6 @@ class AIStockAnalyzer:
                 }
             ],
             "temperature": 0.1,
-            "max_tokens": 500
         }
 
         # 获取并验证timeout
@@ -300,6 +297,9 @@ class AIStockAnalyzer:
 
         if response.status_code == 200:
             result = response.json()
+            # 记录原始响应日志
+            logger.info(f"智谱GLM API原始响应: {json.dumps(result, ensure_ascii=False)}")
+            
             # 智谱GLM使用与OpenAI相同的响应格式
             if 'choices' in result and len(result['choices']) > 0:
                 return result['choices'][0]['message']['content']
