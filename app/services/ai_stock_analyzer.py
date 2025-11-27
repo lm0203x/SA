@@ -107,8 +107,12 @@ class AIStockAnalyzer:
                 return self._call_tongyi_api(prompt)
             elif self.provider == 'openai':
                 return self._call_openai_api(prompt)
+            elif self.provider == 'zhipu':
+                return self._call_zhipu_api(prompt)
             elif self.provider == 'ollama':
                 return self._call_ollama_api(prompt)
+            elif self.provider == 'custom':
+                return self._call_custom_api(prompt)
             else:
                 raise ValueError(f"不支持的AI提供者: {self.provider}")
 
@@ -141,11 +145,18 @@ class AIStockAnalyzer:
             }
         }
 
+        # 获取并验证timeout
+        timeout = config.get('timeout', 30)
+        try:
+            timeout = int(timeout) if timeout else 30
+        except (ValueError, TypeError):
+            timeout = 30
+
         response = requests.post(
             f"{config['base_url']}/services/aigc/text-generation/generation",
             headers=headers,
             json=data,
-            timeout=config.get('timeout', 30)
+            timeout=timeout
         )
 
         if response.status_code == 200:
@@ -178,12 +189,19 @@ class AIStockAnalyzer:
             "max_tokens": 500
         }
 
+        # 获取并验证timeout
+        timeout = config.get('timeout', 30)
+        try:
+            timeout = int(timeout) if timeout else 30
+        except (ValueError, TypeError):
+            timeout = 30
+
         base_url = config.get('base_url', 'https://api.openai.com/v1')
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
             json=data,
-            timeout=config.get('timeout', 30)
+            timeout=timeout
         )
 
         if response.status_code == 200:
@@ -199,6 +217,13 @@ class AIStockAnalyzer:
         """调用Ollama本地API"""
         config = self.config.get('ollama', {})
 
+        # 获取并验证timeout
+        timeout = config.get('timeout', 30)
+        try:
+            timeout = int(timeout) if timeout else 30
+        except (ValueError, TypeError):
+            timeout = 30
+
         response = requests.post(
             f"{config.get('base_url', 'http://localhost:11434')}/api/generate",
             json={
@@ -210,7 +235,7 @@ class AIStockAnalyzer:
                     "num_predict": 500
                 }
             },
-            timeout=config.get('timeout', 30)
+            timeout=timeout
         )
 
         if response.status_code == 200:
@@ -221,6 +246,124 @@ class AIStockAnalyzer:
             if response.text:
                 error_msg += f", {response.text}"
             raise Exception(error_msg)
+
+    def _call_zhipu_api(self, prompt):
+        """调用智谱GLM API"""
+        config = self.config.get('zhipu', {})
+
+        headers = {
+            'Authorization': f'Bearer {config["api_key"]}',
+            'Content-Type': 'application/json'
+        }
+
+        data = {
+            "model": config.get("model", "glm-4"),
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 500
+        }
+
+        # 获取并验证timeout
+        timeout = config.get('timeout', 30)
+        try:
+            timeout = int(timeout) if timeout else 30
+        except (ValueError, TypeError):
+            timeout = 30
+
+        base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
+        response = requests.post(
+            f"{base_url}/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=timeout
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            # 智谱GLM使用与OpenAI相同的响应格式
+            if 'choices' in result and len(result['choices']) > 0:
+                return result['choices'][0]['message']['content']
+            else:
+                error_msg = f"智谱GLM API响应格式错误: {result}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+        else:
+            # 尝试解析错误信息
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_info = error_data['error']
+                    error_msg = f"智谱GLM API调用失败: {response.status_code}, 错误码: {error_info.get('code', 'unknown')}, 消息: {error_info.get('message', 'unknown')}"
+                else:
+                    error_msg = f"智谱GLM API调用失败: {response.status_code}, {error_data}"
+            except:
+                error_msg = f"智谱GLM API调用失败: {response.status_code}, {response.text}"
+            raise Exception(error_msg)
+
+
+    def _call_custom_api(self, prompt):
+        """调用自定义API（兼容OpenAI格式）"""
+        config = self.config.get('custom', {})
+
+        headers = {
+            'Authorization': f'Bearer {config["api_key"]}',
+            'Content-Type': 'application/json'
+        }
+
+        data = {
+            "model": config.get("model", "custom-model"),
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 500
+        }
+
+        # 获取并验证timeout
+        timeout = config.get('timeout', 30)
+        try:
+            timeout = int(timeout) if timeout else 30
+        except (ValueError, TypeError):
+            timeout = 30
+
+        base_url = config.get('base_url', 'https://api.example.com/v1')
+        response = requests.post(
+            f"{base_url}/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=timeout
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            # 假设使用OpenAI兼容格式
+            if 'choices' in result and len(result['choices']) > 0:
+                return result['choices'][0]['message']['content']
+            else:
+                error_msg = f"自定义API响应格式错误: {result}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+        else:
+            # 尝试解析错误信息
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_msg = f"自定义API调用失败: {response.status_code}, 错误: {error_data['error']}"
+                else:
+                    error_msg = f"自定义API调用失败: {response.status_code}, {error_data}"
+            except:
+                error_msg = f"自定义API调用失败: {response.status_code}, {response.text}"
+            raise Exception(error_msg)
+
+
 
     def _build_analysis_prompt(self, ts_code, stock_name, stock_data):
         """构建分析提示词"""

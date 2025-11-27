@@ -285,25 +285,41 @@ def get_latest_analysis(ts_code):
 def get_ai_config():
     """获取AI配置信息"""
     try:
-        from flask import current_app
-
-        ai_config = current_app.config.get('AI_CONFIG', {})
-        provider = ai_config.get('provider', 'tongyi')
-
-        # 检查配置是否有效
-        provider_config = ai_config.get(provider, {})
-        is_configured = bool(provider_config.get('api_key'))
-
-        return jsonify({
-            'success': True,
-            'data': {
-                'provider': provider,
-                'is_configured': is_configured,
-                'model': provider_config.get('model'),
-                'supported_providers': ['tongyi', 'openai']
-            },
-            'message': '获取AI配置信息成功'
-        })
+        from app.models.ai_config import AIConfig
+        
+        # 获取当前激活的配置
+        active_config = AIConfig.get_active_config()
+        
+        if active_config:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'provider': active_config.provider_type,
+                    'is_configured': True,
+                    'model': active_config.config_data.get('model'),
+                    'provider_name': active_config.provider_name,
+                    'supported_providers': ['tongyi', 'openai', 'zhipu', 'ollama', 'custom']
+                },
+                'message': '获取AI配置信息成功'
+            })
+        else:
+            # 尝试获取系统配置（兼容旧方式）
+            from flask import current_app
+            ai_config = current_app.config.get('AI_CONFIG', {})
+            provider = ai_config.get('provider', 'tongyi')
+            provider_config = ai_config.get(provider, {})
+            is_configured = bool(provider_config.get('api_key'))
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'provider': provider,
+                    'is_configured': is_configured,
+                    'model': provider_config.get('model'),
+                    'supported_providers': ['tongyi', 'openai', 'zhipu', 'ollama', 'custom']
+                },
+                'message': '获取AI配置信息成功'
+            })
 
     except Exception as e:
         logger.error(f"获取AI配置失败: {e}")

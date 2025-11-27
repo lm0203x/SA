@@ -40,12 +40,13 @@ def create_ai_config():
             }), 400
 
         # 验证AI提供者类型
-        valid_providers = ['tongyi', 'openai', 'ollama']
+        valid_providers = ['tongyi', 'openai', 'zhipu', 'ollama', 'custom']
         if data['provider_type'] not in valid_providers:
             return jsonify({
                 'success': False,
                 'message': f'不支持的AI提供者类型: {data["provider_type"]}'
             }), 400
+
 
         # 创建新配置
         config = AIConfig(
@@ -323,6 +324,18 @@ def get_ai_config_types():
                 }
             },
             {
+                'type': 'zhipu',
+                'name': '智谱GLM',
+                'description': '智谱AI GLM系列模型',
+                'required_fields': ['api_key', 'model'],
+                'optional_fields': ['base_url', 'timeout'],
+                'default_config': {
+                    'model': 'glm-4',
+                    'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+                    'timeout': 30
+                }
+            },
+            {
                 'type': 'ollama',
                 'name': 'Ollama',
                 'description': '本地部署的Ollama服务',
@@ -331,6 +344,18 @@ def get_ai_config_types():
                 'default_config': {
                     'base_url': 'http://localhost:11434',
                     'model': 'qwen2.5-coder',
+                    'timeout': 30
+                }
+            },
+            {
+                'type': 'custom',
+                'name': '自定义',
+                'description': '自定义AI服务（兼容OpenAI格式）',
+                'required_fields': ['api_key', 'model', 'base_url'],
+                'optional_fields': ['timeout'],
+                'default_config': {
+                    'model': 'custom-model',
+                    'base_url': 'https://your-api-endpoint.com/v1',
                     'timeout': 30
                 }
             }
