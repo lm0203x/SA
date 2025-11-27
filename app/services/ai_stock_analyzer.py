@@ -285,7 +285,8 @@ class AIStockAnalyzer:
         timeout = config.get('timeout', 600)
         try:
             timeout = int(timeout) if timeout else 600
-        except (ValueError, TypeError):\n            timeout = 600
+        except (ValueError, TypeError):
+            timeout = 600
 
         base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
         

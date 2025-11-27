@@ -96,6 +96,12 @@ def get_stock_recommendation():
 
             logger.info(f"AI推荐生成成功: {ts_code} - {result['recommendation']}")
 
+            # 添加股票数据到响应中，供前端显示
+            result['data_summary'] = {
+                'current_price': stock_data.get('current_price', 0.0),
+                'change_pct': stock_data.get('change_pct', 0.0)
+            }
+
             return jsonify({
                 'success': True,
                 'data': result,
