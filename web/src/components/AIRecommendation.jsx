@@ -234,15 +234,18 @@ export default function AIRecommendation() {
                                             <h3 className="text-xl font-bold">{recommendation.stock_name}</h3>
                                             <p className="text-sm text-gray-500">{recommendation.ts_code}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-bold">
-                                                ¥{recommendation.data_summary?.current_price?.toFixed(2) || 'N/A'}
+                                        {/* 只在有价格数据时显示价格信息 */}
+                                        {recommendation.data_summary?.current_price > 0 && (
+                                            <div className="text-right">
+                                                <div className="text-2xl font-bold">
+                                                    ¥{recommendation.data_summary.current_price.toFixed(2)}
+                                                </div>
+                                                <div className={`text-sm ${recommendation.data_summary.change_pct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {recommendation.data_summary.change_pct >= 0 ? '+' : ''}
+                                                    {recommendation.data_summary.change_pct.toFixed(2)}%
+                                                </div>
                                             </div>
-                                            <div className={`text-sm ${recommendation.data_summary?.change_pct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {recommendation.data_summary?.change_pct >= 0 ? '+' : ''}
-                                                {recommendation.data_summary?.change_pct?.toFixed(2)}%
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
                                     {/* 推荐结果 */}
@@ -266,7 +269,7 @@ export default function AIRecommendation() {
 
                                         {/* 目标价格和风险等级 */}
                                         <div className="flex gap-4 mt-3">
-                                            {recommendation.target_price && (
+                                            {recommendation.target_price > 0 && (
                                                 <div>
                                                     <span className="text-sm text-gray-600">目标价位：</span>
                                                     <span className="font-medium">¥{recommendation.target_price.toFixed(2)}</span>
