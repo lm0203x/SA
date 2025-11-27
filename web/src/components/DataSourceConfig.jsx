@@ -5,18 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Database, CheckCircle, XCircle, Loader2, Plus, Trash2, Edit } from 'lucide-react';
+import { Database, CheckCircle, XCircle, Loader2, Plus, Trash2, Edit, RefreshCw } from 'lucide-react';
 import {
   getDataSources,
   createDataSource,
   updateDataSource,
   deleteDataSource,
-  testDataSourceConnection
+  testDataSourceConnection,
+  syncStockList
 } from '@/services/api';
 
 export default function DataSourceConfig() {
   const [dataSources, setDataSources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [testingId, setTestingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -46,14 +48,35 @@ export default function DataSourceConfig() {
     }
   };
 
+  // 同步股票列表
+  const handleSyncStocks = async () => {
+    try {
+      setSyncing(true);
+      setMessage({ type: 'info', text: '正在同步股票列表，这可能需要几分钟...' });
+
+      const response = await syncStockList(true);
+
+      if (response.success) {
+        setMessage({ type: 'success', text: `✅ 同步成功: ${response.message}` });
+      } else {
+        setMessage({ type: 'error', text: `❌ 同步失败: ${response.message}` });
+      }
+    } catch (error) {
+      console.error('同步股票列表失败:', error);
+      setMessage({ type: 'error', text: `❌ 同步失败: ${error.message}` });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // 测试连接
   const handleTestConnection = async (id) => {
     try {
       setTestingId(id);
       setMessage({ type: '', text: '' });
-      
+
       const response = await testDataSourceConnection(id);
-      
+
       if (response.status === 'success' || response.success) {
         setMessage({ type: 'success', text: '✅ 连接测试成功！' });
         loadDataSources(); // 重新加载以更新状态
@@ -72,15 +95,15 @@ export default function DataSourceConfig() {
   const handleToggleActive = async (dataSource) => {
     try {
       setMessage({ type: '', text: '' });
-      
+
       await updateDataSource(dataSource.id, {
         is_active: !dataSource.is_active,
         is_default: !dataSource.is_active, // 激活时设为默认
       });
-      
-      setMessage({ 
-        type: 'success', 
-        text: `✅ 数据源已${!dataSource.is_active ? '激活' : '停用'}` 
+
+      setMessage({
+        type: 'success',
+        text: `✅ 数据源已${!dataSource.is_active ? '激活' : '停用'}`
       });
       loadDataSources();
     } catch (error) {
@@ -98,12 +121,12 @@ export default function DataSourceConfig() {
 
     try {
       setMessage({ type: '', text: '' });
-      
+
       await updateDataSource(dataSource.id, {
         config_data: { token: tushareForm.token },
         source_name: tushareForm.source_name || dataSource.source_name,
       });
-      
+
       setMessage({ type: 'success', text: '✅ Token更新成功' });
       setEditingId(null);
       setTushareForm({ source_name: 'Tushare Pro', token: '' });
@@ -169,13 +192,26 @@ export default function DataSourceConfig() {
       {/* 数据源列表 */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            数据源配置
-          </CardTitle>
-          <CardDescription>
-            配置和管理股票数据源，支持Tushare Pro等多种数据源
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                数据源配置
+              </CardTitle>
+              <CardDescription>
+                配置和管理股票数据源，支持Tushare Pro等多种数据源
+              </CardDescription>
+            </div>
+            <Button
+              onClick={handleSyncStocks}
+              disabled={syncing || dataSources.length === 0}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? '同步中...' : '同步股票列表'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {dataSources.length === 0 ? (
@@ -192,7 +228,7 @@ export default function DataSourceConfig() {
                       <div>
                         <CardTitle className="text-lg">{ds.source_name}</CardTitle>
                         <CardDescription className="text-sm">
-                          类型: {ds.source_type} | 
+                          类型: {ds.source_type} |
                           {ds.last_test_time && ` 最后测试: ${new Date(ds.last_test_time).toLocaleString()}`}
                         </CardDescription>
                       </div>
@@ -256,7 +292,7 @@ export default function DataSourceConfig() {
                         <Edit className="h-4 w-4 mr-1" />
                         配置Token
                       </Button>
-                      
+
                       <Button
                         onClick={() => handleTestConnection(ds.id)}
                         variant="outline"
