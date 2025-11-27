@@ -91,7 +91,29 @@ def update_ai_config(config_id):
         if 'provider_name' in data:
             config.provider_name = data['provider_name']
         if 'config_data' in data:
-            config.config_data = data['config_data']
+            new_config_data = data['config_data']
+            
+            # 处理API密钥掩码问题
+            # 如果前端传回的是掩码后的密钥（包含*），则保留原有的密钥
+            if 'api_key' in new_config_data and config.config_data and 'api_key' in config.config_data:
+                new_key = new_config_data['api_key']
+                old_key = config.config_data['api_key']
+                
+                # 如果新密钥包含*，可能是掩码
+                if '*' in new_key:
+                    # 生成旧密钥的掩码形式进行比对
+                    masked_old_key = old_key
+                    if len(old_key) > 8:
+                        masked_old_key = old_key[:4] + '*' * (len(old_key) - 8) + old_key[-4:]
+                    else:
+                        masked_old_key = '*' * len(old_key)
+                    
+                    # 如果新密钥与掩码后的旧密钥一致，说明用户没有修改密钥，恢复旧密钥
+                    if new_key == masked_old_key:
+                        new_config_data['api_key'] = old_key
+            
+            config.config_data = new_config_data
+
         if 'is_active' in data:
             config.is_active = data['is_active']
         if 'is_default' in data:

@@ -152,6 +152,9 @@ class AIStockAnalyzer:
         except (ValueError, TypeError):
             timeout = 30
 
+        # 记录请求日志
+        logger.info(f"调用通义千问API请求: {json.dumps(data, ensure_ascii=False)}")
+
         response = requests.post(
             f"{config['base_url']}/services/aigc/text-generation/generation",
             headers=headers,
@@ -197,6 +200,10 @@ class AIStockAnalyzer:
             timeout = 30
 
         base_url = config.get('base_url', 'https://api.openai.com/v1')
+        
+        # 记录请求日志
+        logger.info(f"调用OpenAI API请求: {json.dumps(data, ensure_ascii=False)}")
+        
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
@@ -224,17 +231,21 @@ class AIStockAnalyzer:
         except (ValueError, TypeError):
             timeout = 30
 
+        # 记录请求日志
+        request_data = {
+            "model": config.get('model', 'qwen2.5-coder'),
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 500
+            }
+        }
+        logger.info(f"调用Ollama API请求: {json.dumps(request_data, ensure_ascii=False)}")
+
         response = requests.post(
             f"{config.get('base_url', 'http://localhost:11434')}/api/generate",
-            json={
-                "model": config.get('model', 'qwen2.5-coder'),
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": 500
-                }
-            },
+            json=request_data,
             timeout=timeout
         )
 
@@ -276,6 +287,10 @@ class AIStockAnalyzer:
             timeout = 30
 
         base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
+        
+        # 记录请求日志
+        logger.info(f"调用智谱GLM API请求: {json.dumps(data, ensure_ascii=False)}")
+        
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
@@ -335,6 +350,10 @@ class AIStockAnalyzer:
             timeout = 30
 
         base_url = config.get('base_url', 'https://api.example.com/v1')
+        
+        # 记录请求日志
+        logger.info(f"调用自定义API请求: {json.dumps(data, ensure_ascii=False)}")
+        
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
@@ -454,10 +473,12 @@ class AIStockAnalyzer:
                 return result
             else:
                 logger.warning("AI响应中未找到有效的JSON格式")
+                logger.warning(f"原始响应内容: {response_text}")
                 return self._get_default_result()
 
         except json.JSONDecodeError as e:
             logger.error(f"解析AI响应JSON失败: {e}")
+            logger.error(f"原始响应内容: {response_text}")
             return self._get_default_result()
 
         except Exception as e:
