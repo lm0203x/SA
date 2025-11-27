@@ -59,8 +59,16 @@ class AIStockAnalyzer:
             if not self._check_config():
                 return self._get_default_result(ts_code, stock_name, "AI服务未配置")
 
+            # 确定分析模式
+            is_watchlist = stock_data.get('is_watchlist', False)
+            
             # 构建分析提示词
-            prompt = self._build_analysis_prompt(ts_code, stock_name, stock_data)
+            if is_watchlist and stock_data.get('current_price', 0) > 0:
+                # 自选股且有数据，进行详细技术分析
+                prompt = self._build_analysis_prompt(ts_code, stock_name, stock_data)
+            else:
+                # 非自选股或无数据，进行市场舆论分析
+                prompt = self._build_market_analysis_prompt(ts_code, stock_name)
 
             # 调用AI API
             response_text = self._call_ai_api(prompt)
@@ -138,17 +146,16 @@ class AIStockAnalyzer:
                 ]
             },
             "parameters": {
-                "temperature": 0.1,
-                "max_tokens": 500
+                "temperature": 0.1
             }
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 30)
+        timeout = config.get('timeout', 600)
         try:
-            timeout = int(timeout) if timeout else 30
+            timeout = int(timeout) if timeout else 600
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 600
 
         # 记录请求日志
         logger.info(f"调用通义千问API请求: {json.dumps(data, ensure_ascii=False)}")
@@ -186,16 +193,15 @@ class AIStockAnalyzer:
                     "content": prompt
                 }
             ],
-            "temperature": 0.1,
-            "max_tokens": 500
+            "temperature": 0.1
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 30)
+        timeout = config.get('timeout', 600)
         try:
-            timeout = int(timeout) if timeout else 30
+            timeout = int(timeout) if timeout else 600
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 600
 
         base_url = config.get('base_url', 'https://api.openai.com/v1')
         
@@ -235,8 +241,7 @@ class AIStockAnalyzer:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.1,
-                "num_predict": 500
+                "temperature": 0.1
             }
         }
         logger.info(f"调用Ollama API请求: {json.dumps(request_data, ensure_ascii=False)}")
@@ -277,11 +282,10 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 30)
+        timeout = config.get('timeout', 600)
         try:
-            timeout = int(timeout) if timeout else 30
-        except (ValueError, TypeError):
-            timeout = 30
+            timeout = int(timeout) if timeout else 600
+        except (ValueError, TypeError):\n            timeout = 600
 
         base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
         
@@ -338,16 +342,15 @@ class AIStockAnalyzer:
                     "content": prompt
                 }
             ],
-            "temperature": 0.1,
-            "max_tokens": 500
+            "temperature": 0.1
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 30)
+        timeout = config.get('timeout', 600)
         try:
-            timeout = int(timeout) if timeout else 30
+            timeout = int(timeout) if timeout else 600
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 600
 
         base_url = config.get('base_url', 'https://api.example.com/v1')
         
@@ -418,6 +421,39 @@ class AIStockAnalyzer:
 1. recommendation必须是buy/sell/hold之一
 2. reasons数组包含2-3条简要理由
 3. target_price是数字类型
+4. risk_level是low/medium/high之一
+5. confidence是0到1之间的数字
+6. 只返回JSON，不要其他文字
+"""
+        return prompt
+
+    def _build_market_analysis_prompt(self, ts_code, stock_name):
+        """构建市场分析提示词（针对无数据/非自选股）"""
+        prompt = f"""
+你是专业的股票分析师，请分析以下股票的市场情况和舆论风向：
+
+股票代码：{ts_code}
+股票名称：{stock_name}
+
+由于缺乏详细的技术指标数据，请重点从以下角度进行分析：
+1. 宏观经济环境对该行业的影响
+2. 该公司近期的重大新闻或公告
+3. 市场情绪和资金关注度
+4. 行业发展趋势
+
+请基于以上信息给出投资建议，以JSON格式返回：
+{{
+    "recommendation": "buy/sell/hold",
+    "reasons": ["理由1", "理由2"],
+    "target_price": 0,
+    "risk_level": "low/medium/high",
+    "confidence": 0.0-1.0
+}}
+
+注意：
+1. recommendation必须是buy/sell/hold之一
+2. reasons数组包含2-3条基于市场和基本面的理由
+3. target_price设为0即可
 4. risk_level是low/medium/high之一
 5. confidence是0到1之间的数字
 6. 只返回JSON，不要其他文字

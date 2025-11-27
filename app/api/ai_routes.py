@@ -55,6 +55,10 @@ def get_stock_recommendation():
             ts_code=ts_code
         ).order_by(StockDailyBasic.trade_date.desc()).first()
 
+        # 检查是否在自选股中
+        from app.models.watchlist import Watchlist
+        is_watchlist = Watchlist.query.filter_by(ts_code=ts_code).first() is not None
+
         # 准备分析数据
         stock_data = {
             'current_price': float(latest_daily.close) if latest_daily else 0.0,
@@ -63,7 +67,8 @@ def get_stock_recommendation():
             'pe_ratio': float(latest_basic.pe) if latest_basic else 0.0,
             'pb_ratio': float(latest_basic.pb) if latest_basic else 0.0,
             'turnover_rate': float(latest_basic.turnover_rate) if latest_basic else 0.0,
-            'total_mv': float(latest_basic.total_mv) if latest_basic else 0.0
+            'total_mv': float(latest_basic.total_mv) if latest_basic else 0.0,
+            'is_watchlist': is_watchlist  # 添加自选股标记
         }
 
         # AI分析

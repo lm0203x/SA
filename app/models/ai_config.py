@@ -108,18 +108,18 @@ class AIConfig(db.Model):
                     'api_key': '',
                     'model': 'qwen-plus',
                     'base_url': 'https://dashscope.aliyuncs.com/api/v1',
-                    'timeout': 30
+                    'timeout': 600
                 },
                 'openai': {
                     'api_key': '',
                     'model': 'gpt-3.5-turbo',
                     'base_url': 'https://api.openai.com/v1',
-                    'timeout': 30
+                    'timeout': 600
                 },
                 'ollama': {
                     'base_url': 'http://localhost:11434',
                     'model': 'qwen2.5-coder',
-                    'timeout': 30
+                    'timeout': 600
                 }
             }
 
@@ -138,18 +138,18 @@ class AIConfig(db.Model):
                 'api_key': '',
                 'model': 'qwen-plus',
                 'base_url': 'https://dashscope.aliyuncs.com/api/v1',
-                'timeout': 30
+                'timeout': 600
             },
             'openai': {
                 'api_key': '',
                 'model': 'gpt-3.5-turbo',
                 'base_url': 'https://api.openai.com/v1',
-                'timeout': 30
+                'timeout': 600
             },
             'ollama': {
                 'base_url': 'http://localhost:11434',
                 'model': 'qwen2.5-coder',
-                'timeout': 30
+                'timeout': 600
             }
         }
 
