@@ -48,6 +48,10 @@ const StockDashboard = () => {
               <BarChart3 className="w-4 h-4" />
               <span>股票行情</span>
             </TabsTrigger>
+            <TabsTrigger value="strategy" className="flex items-center space-x-2">
+              <Brain className="w-4 h-4" />
+              <span>智能推荐</span>
+            </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
               <span>预警规则</span>
@@ -56,17 +60,13 @@ const StockDashboard = () => {
               <AlertTriangle className="w-4 h-4" />
               <span>预警记录</span>
             </TabsTrigger>
-            <TabsTrigger value="datasource" className="flex items-center space-x-2">
-              <Database className="w-4 h-4" />
-              <span>数据源</span>
-            </TabsTrigger>
             <TabsTrigger value="webhook" className="flex items-center space-x-2">
               <Webhook className="w-4 h-4" />
               <span>Webhook</span>
             </TabsTrigger>
-            <TabsTrigger value="strategy" className="flex items-center space-x-2">
-              <Brain className="w-4 h-4" />
-              <span>智能推荐</span>
+            <TabsTrigger value="datasource" className="flex items-center space-x-2">
+              <Database className="w-4 h-4" />
+              <span>数据源</span>
             </TabsTrigger>
           </TabsList>
 
