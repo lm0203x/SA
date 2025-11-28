@@ -15,7 +15,10 @@ import AlertRecords from '@/components/AlertRecords';
 import AIRecommendation from '@/components/AIRecommendation';
 
 
+import { useNavigate } from 'react-router-dom';
+
 const StockDashboard = () => {
+  const navigate = useNavigate();
 
 
   return (
@@ -28,14 +31,19 @@ const StockDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-900">股票异动检测与智能预警系统</h1>
               <p className="text-gray-600 mt-1">实时监控股票异动，智能预警系统助您把握投资机会</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                <Database className="w-3 h-3 mr-1" />
-                API模式
-              </Badge>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">前后端已连接</span>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                返回首页
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  <Database className="w-3 h-3 mr-1" />
+                  API模式
+                </Badge>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-600">前后端已连接</span>
+                </div>
               </div>
             </div>
           </div>
