@@ -19,7 +19,35 @@ export default function AIRecommendation() {
     // 检查 AI 是否已配置
     useEffect(() => {
         checkAIConfig();
+
+        // 从本地存储加载上次分析结果
+        const savedRecommendation = localStorage.getItem('lastAIRecommendation');
+        const savedStock = localStorage.getItem('lastAIStock');
+        if (savedRecommendation) {
+            try {
+                setRecommendation(JSON.parse(savedRecommendation));
+            } catch (e) {
+                console.error('解析保存的分析结果失败:', e);
+            }
+        }
+        if (savedStock) {
+            setSelectedStock(savedStock);
+        }
     }, []);
+
+    // 保存分析结果到本地存储
+    useEffect(() => {
+        if (recommendation) {
+            localStorage.setItem('lastAIRecommendation', JSON.stringify(recommendation));
+        }
+    }, [recommendation]);
+
+    // 保存股票代码到本地存储
+    useEffect(() => {
+        if (selectedStock) {
+            localStorage.setItem('lastAIStock', selectedStock);
+        }
+    }, [selectedStock]);
 
     const checkAIConfig = async () => {
         try {
