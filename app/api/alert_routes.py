@@ -12,7 +12,7 @@ from app.models.alert_rule import AlertRule
 from app.models.risk_alert import RiskAlert
 from app.models.stock_basic import StockBasic
 from app.services.stock_data_service import StockDataService
-from app.services.alert_trigger_engine import alert_trigger_engine
+# from app.services.alert_trigger_engine import alert_trigger_engine
 
 
 # ==================== 预警规则管理 ====================

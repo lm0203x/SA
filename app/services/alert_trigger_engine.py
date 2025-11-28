@@ -15,6 +15,7 @@ from app.models.stock_basic import StockBasic
 from app.models.stock_daily_history import StockDailyHistory
 from app.models.stock_daily_basic import StockDailyBasic
 from app.models.stock_moneyflow import StockMoneyflow
+# from app.services.webhook_service import webhook_service
 
 logger = logging.getLogger(__name__)
 
@@ -392,6 +393,15 @@ class AlertTriggerEngine:
             # 更新规则触发统计
             rule.record_trigger()
 
+            # 发送Webhook通知
+            try:
+                # 由于循环导入问题，暂时注释掉Webhook发送
+                # self._send_webhook_notifications(rule, alert, stock_data)
+                logger.info(f"预警记录创建成功，Webhook通知已跳过: {rule.rule_name}")
+            except Exception as webhook_error:
+                logger.error(f"发送Webhook通知失败: {str(webhook_error)}")
+                # 不影响预警创建，只记录错误
+
             return alert
 
         except Exception as e:
@@ -463,3 +473,87 @@ def check_stock_alerts(ts_codes: List[str]):
     result = alert_trigger_engine.run_alert_check(ts_codes=ts_codes)
     logger.info(f"股票预警检查完成: {result}")
     return result
+
+
+class AlertTriggerEngine:
+    """预警规则触发引擎"""
+
+    def _send_webhook_notifications(self, rule: AlertRule, alert: RiskAlert, stock_data: Dict[str, Any]):
+        """发送Webhook通知"""
+        try:
+            # 准备预警数据
+            alert_data = {
+                'ts_code': alert.ts_code,
+                'stock_name': stock_data.get('name', ''),
+                'alert_level': alert.alert_level,
+                'alert_message': alert.alert_message,
+                'current_price': alert.current_price,
+                'threshold_value': alert.threshold_value,
+                'trigger_time': alert.created_at.isoformat() if alert.created_at else datetime.utcnow().isoformat(),
+                'rule_name': rule.rule_name,
+                'rule_type': rule.rule_type,
+                'rule_description': rule.RULE_TYPES.get(rule.rule_type, rule.rule_type),
+                'alert_id': alert.id,
+                'portfolio_weight': alert.portfolio_weight if alert.portfolio_weight else None,
+                'position_size': alert.position_size if alert.position_size else None,
+                'risk_value': alert.risk_value if alert.risk_value else None
+            }
+
+            logger.info(f"开始发送Webhook通知: {rule.rule_name} - {alert.alert_message}")
+
+            # 发送到所有匹配的Webhook配置
+            webhook_result = webhook_service.send_alert_to_webhooks(alert_data)
+
+            if webhook_result['success']:
+                logger.info(f"Webhook通知发送成功: 规则={rule.rule_name}, 预警级别={alert.alert_level}, 发送数量={webhook_result.get('success_count', 0)}")
+            else:
+                logger.error(f"Webhook通知发送失败: 规则={rule.rule_name}, 错误={webhook_result.get('message', '未知错误')}")
+
+            return webhook_result
+
+        except Exception as e:
+            logger.error(f"发送Webhook通知异常: 规则={rule.rule_name} - {str(e)}")
+            return {
+                'success': False,
+                'error_message': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+
+    def send_custom_webhook_notification(self, ts_code: str, stock_name: str, alert_level: str,
+                                       alert_message: str, rule_name: str = None):
+        """发送自定义Webhook通知"""
+        try:
+            # 准备预警数据
+            alert_data = {
+                'ts_code': ts_code,
+                'stock_name': stock_name,
+                'alert_level': alert_level,
+                'alert_message': alert_message,
+                'current_price': None,
+                'threshold_value': None,
+                'trigger_time': datetime.utcnow().isoformat(),
+                'rule_name': rule_name or '手动触发',
+                'rule_type': 'manual',
+                'rule_description': '手动触发的预警',
+                'alert_id': None
+            }
+
+            logger.info(f"开始发送自定义Webhook通知: {alert_message}")
+
+            # 发送到指定级别的Webhook配置
+            webhook_result = webhook_service.send_alert_to_webhooks(alert_data)
+
+            if webhook_result['success']:
+                logger.info(f"自定义Webhook通知发送成功: 预警级别={alert_level}, 发送数量={webhook_result.get('success_count', 0)}")
+            else:
+                logger.error(f"自定义Webhook通知发送失败: 错误={webhook_result.get('message', '未知错误')}")
+
+            return webhook_result
+
+        except Exception as e:
+            logger.error(f"发送自定义Webhook通知异常: {str(e)}")
+            return {
+                'success': False,
+                'error_message': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }
