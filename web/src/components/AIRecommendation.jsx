@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Settings, TrendingUp, TrendingDown, Minus, Loader2, BarChart3, AlertCircle } from 'lucide-react';
+import { Brain, Settings, TrendingUp, TrendingDown, Minus, Loader2, AlertCircle } from 'lucide-react';
 import AIConfigDialog from '@/components/AIConfigDialog';
 
 export default function AIRecommendation() {
@@ -16,12 +16,9 @@ export default function AIRecommendation() {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [showConfigDialog, setShowConfigDialog] = useState(false);
     const [aiConfigured, setAiConfigured] = useState(false);
-    const [stats, setStats] = useState(null);
-
     // 检查 AI 是否已配置
     useEffect(() => {
         checkAIConfig();
-        loadStats();
     }, []);
 
     const checkAIConfig = async () => {
@@ -33,18 +30,6 @@ export default function AIRecommendation() {
             }
         } catch (error) {
             console.error('检查AI配置失败:', error);
-        }
-    };
-
-    const loadStats = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/api/ai/analysis-stats?days=30');
-            const data = await response.json();
-            if (data.success) {
-                setStats(data.data);
-            }
-        } catch (error) {
-            console.error('加载统计信息失败:', error);
         }
     };
 
@@ -80,7 +65,6 @@ export default function AIRecommendation() {
             if (data.success) {
                 setRecommendation(data.data);
                 setMessage({ type: 'success', text: '✅ AI分析完成' });
-                loadStats(); // 重新加载统计
             } else {
                 setMessage({ type: 'error', text: `❌ ${data.message}` });
             }
@@ -308,37 +292,7 @@ export default function AIRecommendation() {
                 </CardContent>
             </Card>
 
-            {/* 统计信息 */}
-            {stats && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <BarChart3 className="h-5 w-5" />
-                            分析统计（最近30天）
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="text-center p-4 border rounded-lg">
-                                <div className="text-2xl font-bold text-blue-600">{stats.total_analyses}</div>
-                                <div className="text-sm text-gray-600">总分析次数</div>
-                            </div>
-                            <div className="text-center p-4 border rounded-lg">
-                                <div className="text-2xl font-bold text-green-600">{stats.by_recommendation?.buy || 0}</div>
-                                <div className="text-sm text-gray-600">买入建议</div>
-                            </div>
-                            <div className="text-center p-4 border rounded-lg">
-                                <div className="text-2xl font-bold text-red-600">{stats.by_recommendation?.sell || 0}</div>
-                                <div className="text-sm text-gray-600">卖出建议</div>
-                            </div>
-                            <div className="text-center p-4 border rounded-lg">
-                                <div className="text-2xl font-bold text-yellow-600">{stats.by_recommendation?.hold || 0}</div>
-                                <div className="text-sm text-gray-600">持有建议</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+
 
             {/* AI配置对话框 */}
             <AIConfigDialog
