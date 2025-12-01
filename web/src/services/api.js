@@ -428,6 +428,134 @@ export async function getActiveAIConfig() {
   return apiRequest('/ai-configs/active');
 }
 
+// ==================== Webhook配置API ====================
+
+/**
+ * 获取所有Webhook配置
+ */
+export async function getWebhookConfigs() {
+  return apiRequest('/webhook-configs');
+}
+
+/**
+ * 创建Webhook配置
+ */
+export async function createWebhookConfig(data) {
+  return apiRequest('/webhook-configs', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 更新Webhook配置
+ */
+export async function updateWebhookConfig(id, data) {
+  return apiRequest(`/webhook-configs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 删除Webhook配置
+ */
+export async function deleteWebhookConfig(id) {
+  return apiRequest(`/webhook-configs/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 测试Webhook配置连接
+ */
+export async function testWebhookConfig(id) {
+  return apiRequest(`/webhook-configs/${id}/test`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 启用Webhook配置
+ */
+export async function enableWebhookConfig(id) {
+  return apiRequest(`/webhook-configs/${id}/enable`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 禁用Webhook配置
+ */
+export async function disableWebhookConfig(id) {
+  return apiRequest(`/webhook-configs/${id}/disable`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 设置默认Webhook配置
+ */
+export async function setDefaultWebhookConfig(id) {
+  return apiRequest(`/webhook-configs/${id}/set-default`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 获取激活的Webhook配置
+ */
+export async function getActiveWebhookConfigs() {
+  return apiRequest('/webhook-configs/active');
+}
+
+/**
+ * 获取支持的Webhook类型
+ */
+export async function getWebhookTypes() {
+  return apiRequest('/webhook-configs/types');
+}
+
+/**
+ * 发送测试预警消息
+ */
+export async function sendTestWebhook(data) {
+  return apiRequest('/webhook-configs/send-test', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * 批量启用Webhook配置
+ */
+export async function batchEnableWebhookConfigs(ids) {
+  return apiRequest('/webhook-configs/batch-enable', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/**
+ * 批量禁用Webhook配置
+ */
+export async function batchDisableWebhookConfigs(ids) {
+  return apiRequest('/webhook-configs/batch-disable', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/**
+ * 批量删除Webhook配置
+ */
+export async function batchDeleteWebhookConfigs(ids) {
+  return apiRequest('/webhook-configs/batch-delete', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
+}
+
 // ==================== 导出所有API ====================
 
 export default {
@@ -486,4 +614,20 @@ export default {
   triggerAlertCheck,
   getTriggerStats,
   triggerStockCheck,
+  
+  // Webhook配置
+  getWebhookConfigs,
+  createWebhookConfig,
+  updateWebhookConfig,
+  deleteWebhookConfig,
+  testWebhookConfig,
+  enableWebhookConfig,
+  disableWebhookConfig,
+  setDefaultWebhookConfig,
+  getActiveWebhookConfigs,
+  getWebhookTypes,
+  sendTestWebhook,
+  batchEnableWebhookConfigs,
+  batchDisableWebhookConfigs,
+  batchDeleteWebhookConfigs,
 };

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook, BarChart3 } from 'lucide-react';
 import DataSourceConfig from '@/components/DataSourceConfig';
 import WatchlistManager from '@/components/WatchlistManager';
-import AlertRules from '@/components/AlertRules';
+import AlertManagement from '@/components/AlertManagement';
 import AlertRecords from '@/components/AlertRecords';
 import AIRecommendation from '@/components/AIRecommendation';
 
@@ -51,7 +51,7 @@ const StockDashboard = () => {
 
         {/* 标签页导航 */}
         <Tabs defaultValue="stocks" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="stocks" className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4" />
               <span>股票行情</span>
@@ -67,10 +67,6 @@ const StockDashboard = () => {
             <TabsTrigger value="alerts" className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4" />
               <span>预警记录</span>
-            </TabsTrigger>
-            <TabsTrigger value="webhook" className="flex items-center space-x-2">
-              <Webhook className="w-4 h-4" />
-              <span>Webhook</span>
             </TabsTrigger>
             <TabsTrigger value="datasource" className="flex items-center space-x-2">
               <Database className="w-4 h-4" />
@@ -89,7 +85,7 @@ const StockDashboard = () => {
 
           {/* 预警规则页面 */}
           <TabsContent value="rules" className="space-y-6">
-            <AlertRules />
+            <AlertManagement />
           </TabsContent>
 
           {/* 数据源配置页面 */}
@@ -108,32 +104,7 @@ const StockDashboard = () => {
             <AIRecommendation />
           </TabsContent>
 
-          {/* Webhook配置页面 */}
-          <TabsContent value="webhook" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Webhook通知配置</CardTitle>
-                <CardDescription>配置预警消息的推送渠道和格式</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Webhook className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Webhook配置功能开发中...</h3>
-                  <p className="text-gray-500 mb-4">
-                    将支持多种通知渠道和自定义消息格式
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>• 钉钉机器人通知</div>
-                    <div>• 企业微信通知</div>
-                    <div>• Slack通知</div>
-                    <div>• Telegram通知</div>
-                    <div>• 邮件通知</div>
-                    <div>• 自定义Webhook</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
         </Tabs>
       </div>
     </div>
