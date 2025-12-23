@@ -15,7 +15,7 @@ from app.models.stock_basic import StockBasic
 from app.models.stock_daily_history import StockDailyHistory
 from app.models.stock_daily_basic import StockDailyBasic
 from app.models.stock_moneyflow import StockMoneyflow
-# from app.services.webhook_service import webhook_service
+from app.services.webhook_service import webhook_service
 
 logger = logging.getLogger(__name__)
 
