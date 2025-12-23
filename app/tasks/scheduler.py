@@ -9,15 +9,22 @@ from loguru import logger
 from app.extensions import socketio, db
 from app.models.watchlist import Watchlist
 from app.services.stock_data_service import StockDataService
+from app.services.alert_trigger_engine import alert_trigger_engine
 
 
-def _refresh_watchlist_quotes(days: int = 5):
+def _last_trading_day() -> str:
+    """返回最近一个交易日(简单以工作日近似)。"""
+    day = datetime.now().date() - timedelta(days=1)
+    while day.weekday() >= 5:  # 5=周六 6=周日
+        day -= timedelta(days=1)
+    return day.strftime("%Y%m%d")
+
+
+def _refresh_watchlist_quotes():
     """
-    刷新自选股近期行情/指标/资金流。
-    默认抓取近 `days` 天，覆盖周末/漏数情况。
+    每日刷新自选股的前一交易日行情/指标/资金流，并触发预警。
     """
-    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
-    end_date = datetime.now().strftime("%Y%m%d")
+    trade_date = _last_trading_day()
 
     watchlist = Watchlist.query.all()
     if not watchlist:
@@ -27,9 +34,9 @@ def _refresh_watchlist_quotes(days: int = 5):
     success = 0
     for item in watchlist:
         try:
-            StockDataService.sync_daily_data(item.ts_code, start_date, end_date)
-            StockDataService.sync_daily_basic(item.ts_code, start_date, end_date)
-            StockDataService.sync_moneyflow(item.ts_code, start_date, end_date)
+            StockDataService.sync_daily_data(item.ts_code, start_date=trade_date, end_date=trade_date)
+            StockDataService.sync_daily_basic(item.ts_code, start_date=trade_date, end_date=trade_date)
+            StockDataService.sync_moneyflow(item.ts_code, start_date=trade_date, end_date=trade_date)
             item.last_sync = datetime.utcnow()
             success += 1
         except Exception as e:
@@ -37,6 +44,14 @@ def _refresh_watchlist_quotes(days: int = 5):
 
     db.session.commit()
     logger.info(f"定时刷新完成，自选股 {success}/{len(watchlist)} 条已更新。")
+
+    # 刷新后立即跑一次预警检查，触发Webhook
+    try:
+        result = alert_trigger_engine.run_alert_check()
+        if not result.get("success", False):
+            logger.error(f"定时刷新后预警检查失败: {result.get('message')}")
+    except Exception as e:
+        logger.error(f"定时刷新后预警检查异常: {e}")
 
 
 def start_market_refresh_task(app):
