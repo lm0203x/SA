@@ -4,7 +4,7 @@
 
 import { io } from 'socket.io-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000');
+const WS_URL = import.meta.env.VITE_WS_URL || (import.meta.env.MODE === 'production' ? window.location.origin : `http://${window.location.hostname}:5000`);
 
 class WebSocketService {
   constructor() {
