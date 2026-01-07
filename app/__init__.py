@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 from config import config
@@ -23,6 +24,11 @@ def create_app(config_name='default'):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
+    
+    # 从环境变量加载额外的允许来源
+    extra_origins = os.getenv('CORS_ALLOWED_ORIGINS')
+    if extra_origins:
+        allowed_origins.extend([o.strip() for o in extra_origins.split(',')])
     
     # 如果在生产环境，可以添加生产域名
     if not app.config['DEBUG']:

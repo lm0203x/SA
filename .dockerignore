@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+.idea
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+db.sqlite3
+logs/
+web/node_modules/
+web/dist/

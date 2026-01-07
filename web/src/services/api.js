@@ -2,7 +2,7 @@
  * API服务层 - 封装所有后端API调用
  */
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.MODE === 'production' ? '/api' : 'http://localhost:5000/api');
 
 /**
  * 通用的API请求函数
