@@ -60,14 +60,20 @@ def get_stock_recommendation():
         is_watchlist = Watchlist.query.filter_by(ts_code=ts_code).first() is not None
 
         # 准备分析数据
+        def _to_float(val, default=0.0):
+            try:
+                return float(val)
+            except (TypeError, ValueError):
+                return default
+
         stock_data = {
-            'current_price': float(latest_daily.close) if latest_daily else 0.0,
-            'change_pct': float(latest_daily.pct_chg) if latest_daily else 0.0,
-            'volume_ratio': float(latest_basic.volume_ratio) if latest_basic else 0.0,
-            'pe_ratio': float(latest_basic.pe) if latest_basic else 0.0,
-            'pb_ratio': float(latest_basic.pb) if latest_basic else 0.0,
-            'turnover_rate': float(latest_basic.turnover_rate) if latest_basic else 0.0,
-            'total_mv': float(latest_basic.total_mv) if latest_basic else 0.0,
+            'current_price': _to_float(latest_daily.close) if latest_daily else 0.0,
+            'change_pct': _to_float(latest_daily.pct_chg) if latest_daily else 0.0,
+            'volume_ratio': _to_float(latest_basic.volume_ratio) if latest_basic else 0.0,
+            'pe_ratio': _to_float(latest_basic.pe) if latest_basic else 0.0,
+            'pb_ratio': _to_float(latest_basic.pb) if latest_basic else 0.0,
+            'turnover_rate': _to_float(latest_basic.turnover_rate) if latest_basic else 0.0,
+            'total_mv': _to_float(latest_basic.total_mv) if latest_basic else 0.0,
             'is_watchlist': is_watchlist  # 添加自选股标记
         }
 
