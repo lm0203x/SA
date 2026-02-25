@@ -14,9 +14,9 @@ from .watchlist import Watchlist
 from .data_source_config import DataSourceConfig
 
 # 可选的高级模型（如果需要可以启用）
-# from .stock_factor import StockFactor
-# from .stock_ma_data import StockMaData
-# from .stock_cyq_perf import StockCyqPerf
+from .stock_factor import StockFactor
+from .stock_ma_data import StockMaData
+from .stock_cyq_perf import StockCyqPerf
 # from .stock_minute_data import StockMinuteData
 # from .stock_income_statement import StockIncomeStatement
 # from .text2sql_metadata import TableMetadata, FieldMetadata, QueryTemplate, QueryHistory, BusinessDictionary
@@ -28,6 +28,9 @@ __all__ = [
     'StockDailyHistory',
     'StockDailyBasic',
     'StockMoneyflow',
+    'StockFactor',
+    'StockMaData',
+    'StockCyqPerf',
 
     # 预警系统模型
     'AlertRule',

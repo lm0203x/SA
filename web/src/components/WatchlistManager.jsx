@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Star, Plus, Trash2, RefreshCw, TrendingUp } from 'lucide-react';
-import { 
-  getWatchlist, 
-  addToWatchlist, 
+import {
+  getWatchlist,
+  addToWatchlist,
   removeFromWatchlist,
   syncAllWatchlist,
-  getStockDailyData 
+  getStockDailyData,
+  updatePushConfig
 } from '@/services/api';
 import StockChart from './StockChart';
 import StockIndicators from './StockIndicators';
@@ -159,6 +160,32 @@ export default function WatchlistManager() {
       }
     } catch (err) {
       setError(err.message || '删除失败');
+    }
+  };
+
+  // 更新推送配置
+  const handlePushConfigChange = async (stockId, field, value) => {
+    try {
+      const stock = watchlist.find(s => s.id === stockId);
+      if (!stock) return;
+
+      const config = {
+        push_enabled: field === 'push_enabled' ? value : stock.push_enabled,
+        push_time: field === 'push_time' ? value : stock.push_time
+      };
+
+      const response = await updatePushConfig(stockId, config);
+
+      if (response.success) {
+        // 更新本地状态
+        setWatchlist(watchlist.map(s =>
+          s.id === stockId ? { ...s, ...config } : s
+        ));
+      } else {
+        setError(response.message || '更新推送配置失败');
+      }
+    } catch (err) {
+      setError(err.message || '更新推送配置失败');
     }
   };
 
@@ -334,13 +361,13 @@ export default function WatchlistManager() {
                   <div
                     key={stock.id}
                     className={`p-3 rounded-lg border transition-all ${
-                      selectedStock?.ts_code === stock.ts_code 
-                        ? 'border-blue-500 bg-blue-50' 
+                      selectedStock?.ts_code === stock.ts_code
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div 
+                      <div
                         className="flex-1 cursor-pointer"
                         onClick={() => loadChartData(stock)}
                       >
@@ -362,6 +389,36 @@ export default function WatchlistManager() {
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
+                    </div>
+
+                    {/* AI 推送配置 */}
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={stock.push_enabled || false}
+                            onChange={(e) => handlePushConfigChange(stock.id, 'push_enabled', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 rounded"
+                          />
+                          <span className={stock.push_enabled ? 'text-blue-600 font-medium' : 'text-gray-500'}>
+                            AI推送
+                          </span>
+                        </label>
+                        {stock.push_enabled && (
+                          <input
+                            type="time"
+                            value={stock.push_time || '08:30'}
+                            onChange={(e) => handlePushConfigChange(stock.id, 'push_time', e.target.value)}
+                            className="text-xs px-2 py-1 border rounded"
+                          />
+                        )}
+                        {stock.push_enabled && stock.last_push_at && (
+                          <span className="text-xs text-gray-400">
+                            已推送: {new Date(stock.last_push_at).toLocaleString('zh-CN')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

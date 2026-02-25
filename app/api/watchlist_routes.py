@@ -214,58 +214,58 @@ def sync_all_watchlist():
     """同步所有自选股的数据"""
     try:
         watchlist = Watchlist.query.all()
-        
+
         if not watchlist:
             return jsonify({
                 'success': False,
                 'message': '自选股列表为空'
             }), 400
-        
+
         data = request.get_json() if request.is_json else {}
         start_date = data.get('start_date')
         end_date = data.get('end_date')
-        
+
         success_count = 0
         failed_count = 0
         results = []
-        
+
         for item in watchlist:
             try:
                 # 同步三种数据：日线行情、每日指标、资金流向
                 daily_result = StockDataService.sync_daily_data(
-                    item.ts_code, 
-                    start_date, 
+                    item.ts_code,
+                    start_date,
                     end_date
                 )
-                
+
                 basic_result = StockDataService.sync_daily_basic(
                     item.ts_code,
                     start_date,
                     end_date
                 )
-                
+
                 moneyflow_result = StockDataService.sync_moneyflow(
                     item.ts_code,
                     start_date,
                     end_date
                 )
-                
+
                 # 统计成功的数据类型
                 success_types = []
                 total_added = 0
-                
+
                 if daily_result['success']:
                     success_types.append(f"日线({daily_result.get('added', 0)}条)")
                     total_added += daily_result.get('added', 0)
-                
+
                 if basic_result['success']:
                     success_types.append(f"指标({basic_result.get('added', 0)}条)")
                     total_added += basic_result.get('added', 0)
-                
+
                 if moneyflow_result['success']:
                     success_types.append(f"资金流向({moneyflow_result.get('added', 0)}条)")
                     total_added += moneyflow_result.get('added', 0)
-                
+
                 if success_types:
                     success_count += 1
                     item.last_sync = datetime.utcnow()
@@ -285,14 +285,14 @@ def sync_all_watchlist():
                         error_messages.append(f"指标: {basic_result.get('message', '失败')}")
                     if not moneyflow_result['success']:
                         error_messages.append(f"资金流向: {moneyflow_result.get('message', '失败')}")
-                    
+
                     results.append({
                         'ts_code': item.ts_code,
                         'name': item.name,
                         'success': False,
                         'message': '; '.join(error_messages)
                     })
-            
+
             except Exception as e:
                 failed_count += 1
                 results.append({
@@ -301,9 +301,9 @@ def sync_all_watchlist():
                     'success': False,
                     'message': str(e)
                 })
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'同步完成: 成功{success_count}只, 失败{failed_count}只',
@@ -311,7 +311,56 @@ def sync_all_watchlist():
             'failed_count': failed_count,
             'results': results
         })
-    
+
     except Exception as e:
         logger.error(f"批量同步失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@api_bp.route('/watchlist/<int:id>/push-config', methods=['PUT'])
+def update_push_config(id):
+    """更新自选股的推送配置"""
+    try:
+        watchlist_item = Watchlist.query.get(id)
+
+        if not watchlist_item:
+            return jsonify({
+                'success': False,
+                'message': '自选股不存在'
+            }), 404
+
+        data = request.get_json()
+
+        # 更新推送开关
+        if 'push_enabled' in data:
+            watchlist_item.push_enabled = bool(data['push_enabled'])
+
+        # 更新推送时间
+        if 'push_time' in data:
+            push_time_str = data['push_time']
+            if push_time_str:
+                # 解析 HH:MM 格式
+                from datetime import time
+                try:
+                    hour, minute = map(int, push_time_str.split(':'))
+                    watchlist_item.push_time = time(hour, minute)
+                except:
+                    return jsonify({
+                        'success': False,
+                        'message': '推送时间格式错误，请使用 HH:MM 格式'
+                    }), 400
+            else:
+                watchlist_item.push_time = None
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '推送配置更新成功',
+            'data': watchlist_item.to_dict()
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"更新推送配置失败: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500

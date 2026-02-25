@@ -18,13 +18,18 @@ class Watchlist(db.Model):
 
     # 用户备注
     note = db.Column(db.String(200), comment='用户备注')
-    
+
     # 添加时间
     added_at = db.Column(db.DateTime, default=datetime.utcnow, comment='添加时间')
-    
+
     # 最后更新时间
     last_sync = db.Column(db.DateTime, comment='最后同步时间')
-    
+
+    # AI 推送配置
+    push_enabled = db.Column(db.Boolean, default=False, comment='是否开启推送')
+    push_time = db.Column(db.Time, comment='推送时间')
+    last_push_at = db.Column(db.DateTime, comment='最后推送时间')
+
     def to_dict(self):
         """转换为字典"""
         return {
@@ -34,7 +39,10 @@ class Watchlist(db.Model):
             'name': self.name,
             'note': self.note,
             'added_at': self.added_at.isoformat() if self.added_at else None,
-            'last_sync': self.last_sync.isoformat() if self.last_sync else None
+            'last_sync': self.last_sync.isoformat() if self.last_sync else None,
+            'push_enabled': self.push_enabled,
+            'push_time': self.push_time.strftime('%H:%M') if self.push_time else None,
+            'last_push_at': self.last_push_at.isoformat() if self.last_push_at else None
         }
     
     def __repr__(self):

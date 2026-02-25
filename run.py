@@ -7,7 +7,7 @@ import sys
 
 from app import create_app
 from app.extensions import socketio
-from app.tasks.scheduler import start_market_refresh_task
+from app.tasks.scheduler import start_market_refresh_task, start_analysis_push_task
 
 # 创建 Flask 应用实例
 app = create_app(os.getenv("FLASK_ENV", "default"))
@@ -34,7 +34,12 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # 启动行情定时刷新任务
+    print("[INFO] 启动定时行情刷新任务 (每日 08:00)...")
     start_market_refresh_task(app)
+
+    # 启动 AI 分析定时推送任务
+    print("[INFO] 启动 AI 分析定时推送任务 (每分钟检查)...")
+    start_analysis_push_task(app)
 
     try:
         socketio.run(

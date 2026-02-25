@@ -196,6 +196,16 @@ export async function syncAllWatchlist(params = {}) {
   });
 }
 
+/**
+ * 更新自选股推送配置
+ */
+export async function updatePushConfig(id, config) {
+  return apiRequest(`/watchlist/${id}/push-config`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  });
+}
+
 // ==================== 股票指标与资金流向API ====================
 
 /**
@@ -597,7 +607,8 @@ export default {
   updateWatchlist,
   syncWatchlistStock,
   syncAllWatchlist,
-  
+  updatePushConfig,
+
   // 预警规则
   getAlertRules,
   createAlertRule,
