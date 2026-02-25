@@ -6,18 +6,22 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { TrendingUp } from 'lucide-react';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    // 硬编码 admin/admin 登录
-    const loginUsername = username || 'admin';
-    const loginPassword = password || 'admin';
+    // 硬编码 admin/admin 直接跳过登录
+    if (username === 'admin' && password === 'admin') {
+      localStorage.setItem('token', 'admin-token');
+      localStorage.setItem('user', JSON.stringify({ id: 0, username: 'admin' }));
+      navigate('/dashboard');
+      return;
+    }
 
-    if (!loginUsername || !loginPassword) {
+    if (!username || !password) {
       setError('请输入用户名和密码');
       return;
     }
@@ -31,7 +35,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+        body: JSON.stringify({ username, password }),
       });
       const data = await response.json();
 
