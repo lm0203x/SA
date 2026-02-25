@@ -9,6 +9,7 @@ from .alert_rule import AlertRule
 from .risk_alert import RiskAlert
 
 # 用户功能模型
+from .user import User
 from .watchlist import Watchlist
 from .data_source_config import DataSourceConfig
 
@@ -24,15 +25,16 @@ from .data_source_config import DataSourceConfig
 __all__ = [
     # 核心股票数据模型
     'StockBasic',
-    'StockDailyHistory', 
+    'StockDailyHistory',
     'StockDailyBasic',
     'StockMoneyflow',
-    
+
     # 预警系统模型
     'AlertRule',
     'RiskAlert',
-    
+
     # 用户功能模型
+    'User',
     'Watchlist',
     'DataSourceConfig'
 ] 

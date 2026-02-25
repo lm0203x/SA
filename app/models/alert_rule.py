@@ -12,9 +12,10 @@ import json
 class AlertRule(db.Model):
     """预警规则模型"""
     __tablename__ = 'alert_rules'
-    
+
     # ==================== 基础字段 ====================
     id = db.Column(db.Integer, primary_key=True, comment='规则ID')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True, comment='用户ID')
     rule_name = db.Column(db.String(100), nullable=False, comment='规则名称')
     ts_code = db.Column(db.String(20), nullable=False, comment='股票代码')
     

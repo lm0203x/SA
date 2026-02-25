@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook, BarChart3 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook, BarChart3, UserPlus } from 'lucide-react';
 import DataSourceConfig from '@/components/DataSourceConfig';
 import WatchlistManager from '@/components/WatchlistManager';
 import AlertManagement from '@/components/AlertManagement';
@@ -19,6 +20,40 @@ import { useNavigate } from 'react-router-dom';
 
 const StockDashboard = () => {
   const navigate = useNavigate();
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createMsg, setCreateMsg] = useState('');
+
+  const handleCreateUser = async () => {
+    if (!newUsername || !newPassword) {
+      setCreateMsg('请填写用户名和密码');
+      return;
+    }
+    setCreateLoading(true);
+    setCreateMsg('');
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername, password: newPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCreateMsg('创建成功！');
+        setNewUsername('');
+        setNewPassword('');
+        setTimeout(() => setShowCreateUser(false), 1000);
+      } else {
+        setCreateMsg(data.message || '创建失败');
+      }
+    } catch (e) {
+      setCreateMsg('网络错误');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
 
   return (
@@ -35,6 +70,10 @@ const StockDashboard = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                 返回首页
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateUser(true)}>
+                <UserPlus className="w-4 h-4 mr-1" />
+                创建用户
+              </Button>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   <Database className="w-3 h-3 mr-1" />
@@ -48,6 +87,41 @@ const StockDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* 创建用户弹窗 */}
+        <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>创建新用户</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>用户名</Label>
+                <Input
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  placeholder="输入用户名"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>密码</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="输入密码"
+                />
+              </div>
+              {createMsg && <p className="text-sm text-center text-red-500">{createMsg}</p>}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCreateUser(false)}>取消</Button>
+              <Button onClick={handleCreateUser} disabled={createLoading}>
+                {createLoading ? '创建中...' : '创建'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* 标签页导航 */}
         <Tabs defaultValue="stocks" className="w-full">

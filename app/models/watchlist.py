@@ -9,12 +9,13 @@ from datetime import datetime
 class Watchlist(db.Model):
     """自选股列表"""
     __tablename__ = 'watchlist'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    ts_code = db.Column(db.String(20), unique=True, nullable=False, index=True, comment='股票代码')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True, comment='用户ID')
+    ts_code = db.Column(db.String(20), nullable=False, index=True, comment='股票代码')
     symbol = db.Column(db.String(10), comment='简称')
     name = db.Column(db.String(50), comment='股票名称')
-    
+
     # 用户备注
     note = db.Column(db.String(200), comment='用户备注')
     

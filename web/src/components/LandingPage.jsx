@@ -19,10 +19,10 @@ const LandingPage = () => {
                     </span>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                    <Button variant="ghost" onClick={() => navigate('/login')}>
                         控制台
                     </Button>
-                    <Button onClick={() => navigate('/dashboard')}>
+                    <Button onClick={() => navigate('/login')}>
                         立即开始
                     </Button>
                 </div>
@@ -50,7 +50,7 @@ const LandingPage = () => {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-                    <Button size="lg" className="h-12 px-8 text-lg gap-2" onClick={() => navigate('/dashboard')}>
+                    <Button size="lg" className="h-12 px-8 text-lg gap-2" onClick={() => navigate('/login')}>
                         进入系统 <ArrowRight className="h-5 w-5" />
                     </Button>
                     <Button size="lg" variant="outline" className="h-12 px-8 text-lg">

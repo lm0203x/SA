@@ -17,6 +17,12 @@ export default defineConfig({
       '127.0.0.1',
       '5173-i4tboqw6v3yzkdnkuhpln-3229e15a.manusvm.computer',
       '.manusvm.computer'
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      }
+    }
   }
 })

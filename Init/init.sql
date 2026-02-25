@@ -271,3 +271,18 @@ create table webhook_configs
     created_at         datetime     null comment '创建时间',
     updated_at         datetime     null comment '更新时间'
 );
+
+CREATE TABLE users (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      username VARCHAR(80) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_username (username)
+  );
+
+  ALTER TABLE watchlist ADD COLUMN user_id INT;
+  ALTER TABLE watchlist ADD FOREIGN KEY (user_id) REFERENCES users(id);
+
+  ALTER TABLE alert_rules ADD COLUMN user_id INT;
+  ALTER TABLE alert_rules ADD FOREIGN KEY (user_id) REFERENCES users(id);
