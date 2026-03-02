@@ -41,9 +41,74 @@
 - **数据库**: MySQL 8.0+ / 优化索引设计
 - **通信**: WebSocket / RESTful API / CORS支持
 
-## 🚀 快速开始
+## 🚀 快速开始（Docker 部署推荐）
+
+### 🐳 Docker 部署（推荐）
+
+推荐使用 Docker Compose 一键部署，自动初始化数据库。
+
+#### 1. 环境要求
+- **Docker** 20.10+
+- **Docker Compose** 2.0+
+- **4核8G+** 服务器（线上部署）
+
+#### 2. 一键启动
+```bash
+# 克隆项目后直接启动
+docker compose up -d
+```
+
+#### 3. 服务地址
+- **前端**: http://localhost:80
+- **后端**: http://localhost:5000
+- **MySQL**: localhost:3306
+- **Redis**: localhost:6379
+
+#### 4. 部署更新流程
+```bash
+# 1. 提交代码
+git add .
+git commit -m "feat: 更新内容"
+git push origin dev/1.0.0
+
+# 2. 服务器拉取代码
+cd /opt/stock-app
+git pull
+
+# 3. 重新构建并启动
+docker compose build
+docker compose up -d
+```
+
+#### 5. 常用命令
+```bash
+# 查看日志
+docker compose logs -f backend
+
+# 重启服务
+docker compose restart backend
+
+# 停止服务
+docker compose down
+
+# 删除数据卷（慎用，会删除数据库）
+docker compose down -v
+```
+
+#### 6. 数据备份
+```bash
+# 导出数据库
+docker exec sa-db-1 mysqldump -uroot -p20050204Ylm stock > backup.sql
+
+# 导入数据库
+docker exec -i sa-db-1 mysql -uroot -p20050204Ylm stock < backup.sql
+```
+
+---
 
 ### 📋 项目架构说明
+
+本项目采用**完全前后端分离**架构：
 
 本项目采用**完全前后端分离**架构：
 - **前端**: React + Vite + Tailwind CSS (位于 `web/` 目录)
