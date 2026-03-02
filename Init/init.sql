@@ -46,39 +46,6 @@ create table ai_config
     updated_at     datetime     null
 );
 
-create table alert_rules
-(
-    id                     int auto_increment comment '规则ID'
-        primary key,
-    rule_name              varchar(100) not null comment '规则名称',
-    ts_code                varchar(20)  not null comment '股票代码',
-    rule_type              varchar(50)  not null comment '规则类型',
-    condition_type         varchar(20)  not null comment '条件类型',
-    threshold_value        float        not null comment '阈值',
-    comparison_operator    varchar(10)  not null comment '比较运算符',
-    alert_level            varchar(20)  null comment '预警级别',
-    alert_message_template text         null comment '预警消息模板',
-    is_enabled             tinyint(1)   null comment '是否启用',
-    is_active              tinyint(1)   null comment '是否活跃',
-    trigger_count          int          null comment '触发次数',
-    last_triggered_at      datetime     null comment '最后触发时间',
-    created_at             datetime     null comment '创建时间',
-    updated_at             datetime     null comment '更新时间',
-    extra_config           text         null comment '扩展配置JSON'
-);
-
-create index idx_alert_rules_active
-    on alert_rules (is_active);
-
-create index idx_alert_rules_created_at
-    on alert_rules (created_at);
-
-create index idx_alert_rules_ts_code
-    on alert_rules (ts_code);
-
-create index idx_alert_rules_type_enabled
-    on alert_rules (rule_type, is_enabled);
-
 create table data_source_config
 (
     id             int auto_increment
@@ -94,56 +61,6 @@ create table data_source_config
     created_at     datetime     null,
     updated_at     datetime     null
 );
-
-create table risk_alerts
-(
-    id               int auto_increment
-        primary key,
-    ts_code          varchar(20)                           not null comment '股票代码',
-    alert_type       varchar(50)                           not null comment '预警类型',
-    alert_level      varchar(20)                           not null comment '预警级别',
-    alert_message    text                                  null comment '预警消息',
-    risk_value       float                                 null comment '风险值',
-    threshold_value  float                                 null comment '阈值',
-    current_price    float                                 null comment '当前价格',
-    position_size    float                                 null comment '持仓数量',
-    portfolio_weight float                                 null comment '组合权重',
-    is_active        tinyint(1)                            null comment '是否活跃',
-    is_resolved      tinyint(1)                            null comment '是否已解决',
-    created_at       datetime                              null comment '创建时间',
-    resolved_at      datetime                              null comment '解决时间',
-    rule_id          int                                   null comment '关联的预警规则ID',
-    trigger_source   varchar(20) default 'auto'            null comment '触发源: auto/manual/api/system',
-    alert_status     varchar(20) default 'active'          null comment '预警状态: active/resolved/ignored/pending',
-    updated_at       datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
-    ignored_at       datetime                              null comment '忽略时间',
-    extra_data       text                                  null comment '扩展数据JSON',
-    resolution_note  text                                  null comment '解决备注',
-    is_ignored       tinyint(1)  default 0                 null comment '是否已忽略',
-    constraint fk_risk_alerts_rule_id
-        foreign key (rule_id) references alert_rules (id)
-);
-
-create index idx_risk_alerts_created_at
-    on risk_alerts (created_at);
-
-create index idx_risk_alerts_level_active
-    on risk_alerts (alert_level, is_active);
-
-create index idx_risk_alerts_level_status
-    on risk_alerts (alert_level, alert_status);
-
-create index idx_risk_alerts_rule_id
-    on risk_alerts (rule_id);
-
-create index idx_risk_alerts_source
-    on risk_alerts (trigger_source);
-
-create index idx_risk_alerts_ts_code_type
-    on risk_alerts (ts_code, alert_type);
-
-create index idx_risk_alerts_updated_at
-    on risk_alerts (updated_at);
 
 create table stock_basic
 (
@@ -236,19 +153,132 @@ create table system_configs
         unique (config_key)
 );
 
+create table users
+(
+    id            int auto_increment
+        primary key,
+    username      varchar(80)                          not null,
+    password_hash varchar(255)                         not null,
+    is_active     tinyint(1) default 1                 null,
+    created_at    datetime   default CURRENT_TIMESTAMP null,
+    constraint username
+        unique (username)
+);
+
+create table alert_rules
+(
+    id                     int auto_increment comment '规则ID'
+        primary key,
+    rule_name              varchar(100) not null comment '规则名称',
+    ts_code                varchar(20)  not null comment '股票代码',
+    rule_type              varchar(50)  not null comment '规则类型',
+    condition_type         varchar(20)  not null comment '条件类型',
+    threshold_value        float        not null comment '阈值',
+    comparison_operator    varchar(10)  not null comment '比较运算符',
+    alert_level            varchar(20)  null comment '预警级别',
+    alert_message_template text         null comment '预警消息模板',
+    is_enabled             tinyint(1)   null comment '是否启用',
+    is_active              tinyint(1)   null comment '是否活跃',
+    trigger_count          int          null comment '触发次数',
+    last_triggered_at      datetime     null comment '最后触发时间',
+    created_at             datetime     null comment '创建时间',
+    updated_at             datetime     null comment '更新时间',
+    extra_config           text         null comment '扩展配置JSON',
+    user_id                int          null,
+    constraint alert_rules_ibfk_1
+        foreign key (user_id) references users (id)
+);
+
+create index idx_alert_rules_active
+    on alert_rules (is_active);
+
+create index idx_alert_rules_created_at
+    on alert_rules (created_at);
+
+create index idx_alert_rules_ts_code
+    on alert_rules (ts_code);
+
+create index idx_alert_rules_type_enabled
+    on alert_rules (rule_type, is_enabled);
+
+create index user_id
+    on alert_rules (user_id);
+
+create table risk_alerts
+(
+    id               int auto_increment
+        primary key,
+    ts_code          varchar(20)                           not null comment '股票代码',
+    alert_type       varchar(50)                           not null comment '预警类型',
+    alert_level      varchar(20)                           not null comment '预警级别',
+    alert_message    text                                  null comment '预警消息',
+    risk_value       float                                 null comment '风险值',
+    threshold_value  float                                 null comment '阈值',
+    current_price    float                                 null comment '当前价格',
+    position_size    float                                 null comment '持仓数量',
+    portfolio_weight float                                 null comment '组合权重',
+    is_active        tinyint(1)                            null comment '是否活跃',
+    is_resolved      tinyint(1)                            null comment '是否已解决',
+    created_at       datetime                              null comment '创建时间',
+    resolved_at      datetime                              null comment '解决时间',
+    rule_id          int                                   null comment '关联的预警规则ID',
+    trigger_source   varchar(20) default 'auto'            null comment '触发源: auto/manual/api/system',
+    alert_status     varchar(20) default 'active'          null comment '预警状态: active/resolved/ignored/pending',
+    updated_at       datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    ignored_at       datetime                              null comment '忽略时间',
+    extra_data       text                                  null comment '扩展数据JSON',
+    resolution_note  text                                  null comment '解决备注',
+    is_ignored       tinyint(1)  default 0                 null comment '是否已忽略',
+    constraint fk_risk_alerts_rule_id
+        foreign key (rule_id) references alert_rules (id)
+);
+
+create index idx_risk_alerts_created_at
+    on risk_alerts (created_at);
+
+create index idx_risk_alerts_level_active
+    on risk_alerts (alert_level, is_active);
+
+create index idx_risk_alerts_level_status
+    on risk_alerts (alert_level, alert_status);
+
+create index idx_risk_alerts_rule_id
+    on risk_alerts (rule_id);
+
+create index idx_risk_alerts_source
+    on risk_alerts (trigger_source);
+
+create index idx_risk_alerts_ts_code_type
+    on risk_alerts (ts_code, alert_type);
+
+create index idx_risk_alerts_updated_at
+    on risk_alerts (updated_at);
+
+create index idx_username
+    on users (username);
+
 create table watchlist
 (
-    id        int auto_increment
+    id           int auto_increment
         primary key,
-    ts_code   varchar(20)  not null comment '股票代码',
-    symbol    varchar(10)  null comment '简称',
-    name      varchar(50)  null comment '股票名称',
-    note      varchar(200) null comment '用户备注',
-    added_at  datetime     null comment '添加时间',
-    last_sync datetime     null comment '最后同步时间',
+    ts_code      varchar(20)          not null comment '股票代码',
+    symbol       varchar(10)          null comment '简称',
+    name         varchar(50)          null comment '股票名称',
+    note         varchar(200)         null comment '用户备注',
+    push_enabled tinyint(1) default 0 null comment '是否开启推送',
+    push_time    time                 null comment '推送时间',
+    last_push_at datetime             null comment '最后推送时间',
+    added_at     datetime             null comment '添加时间',
+    last_sync    datetime             null comment '最后同步时间',
+    user_id      int                  null,
     constraint ix_watchlist_ts_code
-        unique (ts_code)
+        unique (ts_code),
+    constraint watchlist_ibfk_1
+        foreign key (user_id) references users (id)
 );
+
+create index user_id
+    on watchlist (user_id);
 
 create table webhook_configs
 (
@@ -272,17 +302,3 @@ create table webhook_configs
     updated_at         datetime     null comment '更新时间'
 );
 
-CREATE TABLE users (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      username VARCHAR(80) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      is_active BOOLEAN DEFAULT TRUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_username (username)
-  );
-
-  ALTER TABLE watchlist ADD COLUMN user_id INT;
-  ALTER TABLE watchlist ADD FOREIGN KEY (user_id) REFERENCES users(id);
-
-  ALTER TABLE alert_rules ADD COLUMN user_id INT;
-  ALTER TABLE alert_rules ADD FOREIGN KEY (user_id) REFERENCES users(id);
