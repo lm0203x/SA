@@ -25,7 +25,7 @@ class AIStockAnalyzer:
             self.config = AIConfig.get_config_dict()
             self.provider = self.config.get('provider', 'tongyi')
         except Exception as e:
-            logger.warning(f"从数据库AI配置加载失败，使用默认配置: {e}")
+            logger.warning(f"从数据库AI配置加载失败,使用默认配置: {e}")
             # 回退到系统配置
             try:
                 from app.models.system_config import SystemConfig
@@ -64,11 +64,11 @@ class AIStockAnalyzer:
             
             # 构建分析提示词
             if is_watchlist and stock_data.get('current_price', 0) > 0:
-                # 自选股且有数据，进行详细技术分析
+                # 自选股且有数据,进行详细技术分析
                 prompt = self._build_analysis_prompt(ts_code, stock_name, stock_data)
             else:
-                # 非自选股或无数据，进行市场舆论分析
-                prompt = self._build_market_analysis_prompt(ts_code, stock_name)
+                # 非自选股或无数据,进行市场舆论分析
+                prompt = self._build_market_analysis_prompt(ts_code, stock_name, stock_data)
 
             # 调用AI API
             response_text = self._call_ai_api(prompt)
@@ -389,7 +389,7 @@ class AIStockAnalyzer:
 
 
     def _build_analysis_prompt(self, ts_code, stock_name, stock_data):
-        """构建分析提示词"""
+        """构建专业分析提示词"""
 
         # 准备数据字段
         current_price = stock_data.get('current_price', 0)
@@ -397,69 +397,139 @@ class AIStockAnalyzer:
         volume_ratio = stock_data.get('volume_ratio', 0)
         pe_ratio = stock_data.get('pe_ratio', 0)
         pb_ratio = stock_data.get('pb_ratio', 0)
+        turnover_rate = stock_data.get('turnover_rate', 0)
+        total_mv = stock_data.get('total_mv', 0)
+        news = stock_data.get('news', '暂无最新资讯')
 
-        prompt = f"""
-你是专业的股票分析师，请分析以下股票并给出投资建议：
+        # 判断市场状态
+        market_status = self._get_market_status(change_pct, volume_ratio, turnover_rate)
 
-股票代码：{ts_code}
-股票名称：{stock_name}
-当前价格：¥{current_price}
-今日涨跌：{change_pct:.2f}%
-成交量比：{volume_ratio}
-市盈率：{pe_ratio}
-市净率：{pb_ratio}
+        prompt = f"""<system>
+你是一位具有10年以上经验的资深股票分析师,专门为机构投资者提供投资决策支持.你的分析风格稳健客观,注重风险控制,善于识别市场情绪和资金流向.
+</system>
 
-请基于以上信息给出投资建议，以JSON格式返回：
+<role>
+作为专业分析师,请从以下几个维度对股票进行综合分析:
+- 【技术面】价格走势、成交量、换手率、均线形态
+- 【基本面】估值水平（PE/PB）、盈利能力、市场地位
+- 【资金面】主力资金流向、换手率异常、市场情绪
+- 【消息面】最新资讯、市场传闻、政策影响
+- 【风险提示】潜在风险点,回撤预警因素
+</role>
+
+<analysis_framework>
+请严格按照以下框架进行分析:
+- 若涨幅>5%且量比>1.5:重点分析是否处于主升浪,警惕放量滞涨
+- 若跌幅>5%:分析是否破位下跌,评估支撑位
+- 若PE<0或PE>100:说明估值异常原因
+- 若换手率>15%:提示资金博弈剧烈风险
+- 若总市值<50亿:提示小盘股波动风险
+- 若总市值>1000亿:提示大盘股弹性不足
+</analysis_framework>
+
+<data>
+股票代码: {ts_code}
+股票名称:{stock_name}
+当前价格:¥{current_price:.2f}
+涨跌幅:{change_pct:.2f}%
+量比:{volume_ratio:.2f}
+换手率:{turnover_rate:.2f}%
+市盈率(PE):{pe_ratio:.2f}
+市净率(PB):{pb_ratio:.2f}
+总市值:{total_mv/100000000:.2f}亿
+市场状态:{market_status}
+
+【最新资讯】
+{news}
+</data>
+
+<output_format>
+请返回以下JSON格式（必须严格遵循,不要任何额外文字）:
 {{
-    "recommendation": "buy/sell/hold",
-    "reasons": ["理由1", "理由2"],
-    "target_price": 目标价格数字,
-    "risk_level": "low/medium/high",
-    "confidence": 0.0-1.0
+    "recommendation": "buy" | "sell" | "hold",
+    "reasons": ["分析理由1（包含具体数据和指标）", "分析理由2", "分析理由3"],
+    "target_price": 目标价位（当前价格±30%以内为合理区间）,
+    "risk_level": "low" | "medium" | "high",
+    "confidence": 0.0-1.0（置信度,综合考虑数据完整性,分析确定性）,
+    "key_points": ["要点1", "要点2", "要点3"],
+    "risk_warning": "风险提示（50字以内）"
 }}
+</output_format>
 
-注意：
-1. recommendation必须是buy/sell/hold之一
-2. reasons数组包含2-3条简要理由
-3. target_price是数字类型
-4. risk_level是low/medium/high之一
-5. confidence是0到1之间的数字
-6. 只返回JSON，不要其他文字
+<important>
+- recommendation只能是buy/sell/hold之一
+- reasons必须包含具体数值,如"PE为XX高于行业平均"
+- target_price必须考虑当前价格±30%合理区间
+- risk_level必须与风险提示一致
+- 只返回JSON,不要任何解释性文字
+- 如果数据不足导致无法判断,confidence应低于0.6
+- 必须结合最新资讯进行分析,资讯可能影响短期走势
+</important>
 """
         return prompt
 
-    def _build_market_analysis_prompt(self, ts_code, stock_name):
+    def _build_market_analysis_prompt(self, ts_code, stock_name, stock_data):
         """构建市场分析提示词（针对无数据/非自选股）"""
-        prompt = f"""
-你是专业的股票分析师，请分析以下股票的市场情况和舆论风向：
+        news = stock_data.get('news', '暂无最新资讯')
 
-股票代码：{ts_code}
-股票名称：{stock_name}
+        prompt = f"""<system>
+你是一位具有10年以上经验的资深股票分析师,专门为机构投资者提供投资决策支持.你的分析风格稳健客观,注重风险控制,善于识别市场情绪和资金流向.
+</system>
 
-由于缺乏详细的技术指标数据，请重点从以下角度进行分析：
-1. 宏观经济环境对该行业的影响
-2. 该公司近期的重大新闻或公告
-3. 市场情绪和资金关注度
-4. 行业发展趋势
+<role>
+作为专业分析师,请基于最新资讯和市场舆论对股票进行分析:
+- 【消息面】最新资讯、公告、传闻的影响
+- 【市场情绪】资金关注度、散户情绪
+- 【行业趋势】所属板块走势、政策影响
+- 【风险提示】潜在风险
+</role>
 
-请基于以上信息给出投资建议，以JSON格式返回：
+<data>
+股票代码: {ts_code}
+股票名称:{stock_name}
+
+【最新资讯】
+{news}
+</data>
+
+<output_format>
+请返回以下JSON格式（必须严格遵循,不要任何额外文字）:
 {{
-    "recommendation": "buy/sell/hold",
-    "reasons": ["理由1", "理由2"],
+    "recommendation": "buy" | "sell" | "hold",
+    "reasons": ["分析理由1（基于资讯内容）", "分析理由2", "分析理由3"],
     "target_price": 0,
-    "risk_level": "low/medium/high",
-    "confidence": 0.0-1.0
+    "risk_level": "low" | "medium" | "high",
+    "confidence": 0.0-1.0,
+    "key_points": ["要点1", "要点2"],
+    "risk_warning": "风险提示（50字以内）"
 }}
+</output_format>
 
-注意：
-1. recommendation必须是buy/sell/hold之一
-2. reasons数组包含2-3条基于市场和基本面的理由
-3. target_price设为0即可
-4. risk_level是low/medium/high之一
-5. confidence是0到1之间的数字
-6. 只返回JSON，不要其他文字
+<important>
+- recommendation只能是buy/sell/hold之一
+- 必须重点分析最新资讯对股价的影响
+- 若无实质资讯,confidence应低于0.5
+- 只返回JSON,不要任何解释性文字
+</important>
 """
         return prompt
+
+    def _get_market_status(self, change_pct, volume_ratio, turnover_rate):
+        """判断市场状态"""
+        if change_pct > 5 and volume_ratio > 1.5:
+            return "强势突破"
+        elif change_pct > 3:
+            return "强势上涨"
+        elif change_pct < -5:
+            return "大幅下跌"
+        elif change_pct < -3:
+            return "弱势下跌"
+        elif turnover_rate > 15:
+            return "资金博弈剧烈"
+        elif volume_ratio > 2:
+            return "放量异动"
+        else:
+            return "横盘震荡"
 
     def _parse_response(self, response_text):
         """解析AI响应"""
@@ -526,7 +596,7 @@ class AIStockAnalyzer:
         """获取默认分析结果"""
         return {
             'recommendation': 'hold',
-            'reasons': ['AI分析暂时不可用，建议谨慎投资'],
+            'reasons': ['AI分析暂时不可用,建议谨慎投资'],
             'target_price': 0.0,
             'risk_level': 'medium',
             'confidence': 0.0,

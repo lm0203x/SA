@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from app.api import api_bp
 from app.extensions import db
 from app.services.ai_stock_analyzer import get_ai_analyzer
+from app.services.news_service import NewsService
 from app.models.ai_analysis import AIAnalysisRecord
 from app.models.stock_basic import StockBasic
 from app.models.stock_daily_history import StockDailyHistory
@@ -59,6 +60,15 @@ def get_stock_recommendation():
         from app.models.watchlist import Watchlist
         is_watchlist = Watchlist.query.filter_by(ts_code=ts_code).first() is not None
 
+        # 获取最新资讯
+        try:
+            news_list = NewsService.get_stock_news(ts_code, stock_info.name, limit=3)
+            news_text = NewsService.format_news_for_prompt(news_list)
+        except Exception as e:
+            logger.warning(f"获取股票资讯失败: {e}")
+            news_list = []
+            news_text = "暂无最新资讯"
+
         # 准备分析数据
         def _to_float(val, default=0.0):
             try:
@@ -74,7 +84,9 @@ def get_stock_recommendation():
             'pb_ratio': _to_float(latest_basic.pb) if latest_basic else 0.0,
             'turnover_rate': _to_float(latest_basic.turnover_rate) if latest_basic else 0.0,
             'total_mv': _to_float(latest_basic.total_mv) if latest_basic else 0.0,
-            'is_watchlist': is_watchlist  # 添加自选股标记
+            'is_watchlist': is_watchlist,  # 自选股标记
+            'news': news_text,  # 最新资讯
+            'news_list': news_list  # 资讯列表（用于返回给前端）
         }
 
         # AI分析

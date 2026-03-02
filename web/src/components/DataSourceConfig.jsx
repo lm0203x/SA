@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Database, CheckCircle, XCircle, Loader2, Plus, Trash2, Edit, RefreshCw } from 'lucide-react';
 import {
   getDataSources,
@@ -28,6 +29,17 @@ export default function DataSourceConfig() {
     source_name: 'Tushare Pro',
     token: '',
   });
+
+  // 新增数据源对话框
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newDataSource, setNewDataSource] = useState({
+    source_type: 'tushare',
+    source_name: '',
+    config_data: { token: '' },
+    is_active: false,
+    is_default: false,
+  });
+  const [saving, setSaving] = useState(false);
 
   // 加载数据源列表
   useEffect(() => {
@@ -112,6 +124,26 @@ export default function DataSourceConfig() {
     }
   };
 
+  // 设置默认数据源
+  const handleSetDefault = async (dataSource) => {
+    try {
+      setMessage({ type: '', text: '' });
+
+      await updateDataSource(dataSource.id, {
+        is_default: true,
+      });
+
+      setMessage({
+        type: 'success',
+        text: '✅ 已设为默认数据源'
+      });
+      loadDataSources();
+    } catch (error) {
+      console.error('设置默认数据源失败:', error);
+      setMessage({ type: 'error', text: `❌ 设置失败: ${error.message}` });
+    }
+  };
+
   // 更新Token
   const handleUpdateToken = async (dataSource) => {
     if (!tushareForm.token.trim()) {
@@ -137,6 +169,47 @@ export default function DataSourceConfig() {
     }
   };
 
+  // 新增数据源
+  const handleAddDataSource = async () => {
+    if (!newDataSource.source_name.trim()) {
+      setMessage({ type: 'error', text: '请输入数据源名称' });
+      return;
+    }
+    if (!newDataSource.config_data.token.trim()) {
+      setMessage({ type: 'error', text: '请输入Token' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage({ type: '', text: '' });
+
+      await createDataSource({
+        source_type: newDataSource.source_type,
+        source_name: newDataSource.source_name,
+        config_data: newDataSource.config_data,
+        is_active: newDataSource.is_active,
+        is_default: newDataSource.is_default,
+      });
+
+      setMessage({ type: 'success', text: '✅ 数据源创建成功' });
+      setShowAddDialog(false);
+      setNewDataSource({
+        source_type: 'tushare',
+        source_name: '',
+        config_data: { token: '' },
+        is_active: false,
+        is_default: false,
+      });
+      loadDataSources();
+    } catch (error) {
+      console.error('创建数据源失败:', error);
+      setMessage({ type: 'error', text: `❌ 创建失败: ${error.message}` });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // 删除数据源
   const handleDelete = async (id) => {
     if (!confirm('确定要删除此数据源吗？')) return;
@@ -154,13 +227,18 @@ export default function DataSourceConfig() {
 
   // 渲染状态徽章
   const renderStatusBadge = (dataSource) => {
+    const badges = [];
+    if (dataSource.is_default) {
+      badges.push(<Badge key="default" className="bg-purple-500">默认</Badge>);
+    }
     if (dataSource.is_active) {
-      return <Badge className="bg-green-500">已激活</Badge>;
+      badges.push(<Badge key="active" className="bg-green-500">已激活</Badge>);
+    } else if (dataSource.status === '成功') {
+      badges.push(<Badge key="tested" className="bg-blue-500">已测试</Badge>);
+    } else {
+      badges.push(<Badge key="untested" variant="outline">未测试</Badge>);
     }
-    if (dataSource.status === '成功') {
-      return <Badge className="bg-blue-500">已测试</Badge>;
-    }
-    return <Badge variant="outline">未测试</Badge>;
+    return <div className="flex gap-1">{badges}</div>;
   };
 
   if (loading) {
@@ -202,6 +280,13 @@ export default function DataSourceConfig() {
                 配置和管理股票数据源，支持Tushare Pro等多种数据源
               </CardDescription>
             </div>
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              新增数据源
+            </Button>
             <Button
               onClick={handleSyncStocks}
               disabled={syncing || dataSources.length === 0}
@@ -312,6 +397,17 @@ export default function DataSourceConfig() {
                         )}
                       </Button>
 
+                      {!ds.is_default && (
+                        <Button
+                          onClick={() => handleSetDefault(ds)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          设为默认
+                        </Button>
+                      )}
+
                       <Button
                         onClick={() => handleToggleActive(ds)}
                         variant={ds.is_active ? "default" : "outline"}
@@ -358,6 +454,69 @@ export default function DataSourceConfig() {
           )}
         </CardContent>
       </Card>
+
+      {/* 新增数据源对话框 */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新增数据源</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="source_type">数据源类型</Label>
+              <select
+                id="source_type"
+                className="w-full mt-1 p-2 border rounded"
+                value={newDataSource.source_type}
+                onChange={(e) => setNewDataSource({ ...newDataSource, source_type: e.target.value })}
+              >
+                <option value="tushare">Tushare Pro</option>
+                <option value="baostock">Baostock</option>
+                <option value="tushare_pro">Tushare Pro (新)</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="source_name">数据源名称</Label>
+              <Input
+                id="source_name"
+                value={newDataSource.source_name}
+                onChange={(e) => setNewDataSource({ ...newDataSource, source_name: e.target.value })}
+                placeholder="请输入数据源名称"
+              />
+            </div>
+            <div>
+              <Label htmlFor="token">Token</Label>
+              <Input
+                id="token"
+                type="password"
+                value={newDataSource.config_data.token}
+                onChange={(e) => setNewDataSource({
+                  ...newDataSource,
+                  config_data: { token: e.target.value }
+                })}
+                placeholder="请输入API Token"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_default"
+                checked={newDataSource.is_default}
+                onChange={(e) => setNewDataSource({ ...newDataSource, is_default: e.target.checked })}
+              />
+              <Label htmlFor="is_default" className="font-normal">设为默认数据源</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleAddDataSource} disabled={saving}>
+              {saving ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

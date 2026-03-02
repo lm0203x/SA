@@ -51,7 +51,7 @@ export default function AIRecommendation() {
 
     const checkAIConfig = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/ai/config');
+            const response = await fetch('/api/ai/config');
             const data = await response.json();
             if (data.success) {
                 setAiConfigured(data.data.is_configured);
@@ -78,7 +78,7 @@ export default function AIRecommendation() {
             setAnalyzing(true);
             setMessage({ type: '', text: '' });
 
-            const response = await fetch('http://localhost:5000/api/ai/stock-recommendation', {
+            const response = await fetch('/api/ai/stock-recommendation', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
