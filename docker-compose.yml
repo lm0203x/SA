@@ -24,6 +24,7 @@ services:
       - DB_NAME=stock
       - REDIS_HOST=redis
       - FLASK_ENV=production
+      - TZ=Asia/Shanghai
     depends_on:
       - db
       - redis
