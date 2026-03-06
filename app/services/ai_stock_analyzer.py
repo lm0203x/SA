@@ -145,7 +145,7 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 30000)
+        timeout_ms = config.get('timeout', 3000000)
         try:
             timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
@@ -206,7 +206,7 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 30000)
+        timeout_ms = config.get('timeout', 3000000)
         try:
             timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
@@ -267,7 +267,7 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 30000)
+        timeout_ms = config.get('timeout', 3000000)
         try:
             timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
@@ -332,7 +332,7 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 30000)
+        timeout_ms = config.get('timeout', 3000000)
         try:
             timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):

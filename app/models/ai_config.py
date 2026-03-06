@@ -108,25 +108,25 @@ class AIConfig(db.Model):
                     'api_key': '',
                     'model': 'glm-4-flash',
                     'base_url': 'https://open.bigmodel.cn/api/paas/v4',
-                    'timeout': 30000
+                    'timeout': 3000000
                 },
                 'minmax': {
                     'api_key': '',
                     'model': 'abab6.5s-chat',
                     'base_url': 'https://api.minimax.chat/v1',
-                    'timeout': 30000
+                    'timeout': 3000000
                 },
                 'kimi': {
                     'api_key': '',
                     'model': 'moonshot-v1-8k',
                     'base_url': 'https://api.moonshot.cn/v1',
-                    'timeout': 30000
+                    'timeout': 3000000
                 },
                 'custom': {
                     'api_key': '',
                     'model': 'custom-model',
                     'base_url': 'https://your-api-endpoint.com/v1',
-                    'timeout': 30000
+                    'timeout': 3000000
                 }
             }
 
@@ -145,25 +145,25 @@ class AIConfig(db.Model):
                 'api_key': '',
                 'model': 'glm-4-flash',
                 'base_url': 'https://open.bigmodel.cn/api/paas/v4',
-                'timeout': 30000
+                'timeout': 3000000
             },
             'minmax': {
                 'api_key': '',
                 'model': 'abab6.5s-chat',
                 'base_url': 'https://api.minimax.chat/v1',
-                'timeout': 30000
+                'timeout': 3000000
             },
             'kimi': {
                 'api_key': '',
                 'model': 'moonshot-v1-8k',
                 'base_url': 'https://api.moonshot.cn/v1',
-                'timeout': 30000
+                'timeout': 3000000
             },
             'custom': {
                 'api_key': '',
                 'model': 'custom-model',
                 'base_url': 'https://your-api-endpoint.com/v1',
-                'timeout': 30000
+                'timeout': 3000000
             }
         }
 
