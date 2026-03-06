@@ -395,9 +395,29 @@ class AlertTriggerEngine:
 
             # 发送Webhook通知
             try:
-                # 由于循环导入问题，暂时注释掉Webhook发送
-                # self._send_webhook_notifications(rule, alert, stock_data)
-                logger.info(f"预警记录创建成功，Webhook通知已跳过: {rule.rule_name}")
+                # 准备预警数据
+                alert_data = {
+                    'ts_code': alert.ts_code,
+                    'stock_name': stock_data.get('name', ''),
+                    'alert_level': alert.alert_level,
+                    'alert_message': alert.alert_message,
+                    'current_price': alert.current_price,
+                    'threshold_value': alert.threshold_value,
+                    'trigger_time': alert.created_at.isoformat() if alert.created_at else datetime.utcnow().isoformat(),
+                    'rule_name': rule.rule_name,
+                    'rule_type': rule.rule_type,
+                    'rule_description': rule.RULE_TYPES.get(rule.rule_type, rule.rule_type),
+                    'alert_id': alert.id
+                }
+
+                # 发送到所有匹配的Webhook配置
+                from app.services.webhook_service import webhook_service
+                webhook_result = webhook_service.send_alert_to_webhooks(alert_data)
+
+                if webhook_result['success']:
+                    logger.info(f"Webhook通知发送成功: 规则={rule.rule_name}, 预警级别={alert.alert_level}, 发送数量={webhook_result.get('success_count', 0)}")
+                else:
+                    logger.warning(f"Webhook通知发送结果: {webhook_result.get('message', '未知')}")
             except Exception as webhook_error:
                 logger.error(f"发送Webhook通知失败: {str(webhook_error)}")
                 # 不影响预警创建，只记录错误

@@ -378,9 +378,53 @@ def create_alert_record():
 
         logger.info(f"创建预警记录成功: {alert.ts_code} - {alert.alert_type} ({alert.id})")
 
+        # 发送Webhook通知
+        webhook_sent = False
+        webhook_result = None
+        try:
+            from app.services.webhook_service import webhook_service
+
+            # 准备预警数据
+            alert_data = {
+                'ts_code': alert.ts_code,
+                'stock_name': stock.name if stock else '',
+                'alert_level': alert.alert_level,
+                'alert_message': alert.alert_message,
+                'current_price': alert.current_price,
+                'threshold_value': alert.threshold_value,
+                'trigger_time': alert.created_at.isoformat() if alert.created_at else datetime.utcnow().isoformat(),
+                'rule_name': data.get('rule_name', '手动触发'),
+                'rule_type': alert.alert_type,
+                'rule_description': '手动创建的预警',
+                'alert_id': alert.id,
+                'risk_value': alert.risk_value,
+                'position_size': alert.position_size,
+                'portfolio_weight': alert.portfolio_weight
+            }
+
+            webhook_result = webhook_service.send_alert_to_webhooks(alert_data)
+            webhook_sent = True
+
+            if webhook_result['success']:
+                logger.info(f"手动预警Webhook发送成功: {alert.ts_code}, 发送数量={webhook_result.get('success_count', 0)}")
+            else:
+                logger.warning(f"手动预警Webhook发送结果: {webhook_result.get('message', '未知')}")
+
+        except Exception as webhook_error:
+            logger.error(f"手动预警发送Webhook失败: {str(webhook_error)}")
+
+        response_data = alert.to_dict(include_rule=True)
+        if webhook_sent and webhook_result:
+            response_data['webhook_notification'] = {
+                'sent': webhook_sent,
+                'success': webhook_result.get('success', False),
+                'message': webhook_result.get('message', ''),
+                'success_count': webhook_result.get('success_count', 0)
+            }
+
         return jsonify({
             'success': True,
-            'data': alert.to_dict(include_rule=True),
+            'data': response_data,
             'message': '预警记录创建成功'
         }), 201
 
