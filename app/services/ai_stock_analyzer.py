@@ -145,11 +145,15 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 3000000)
+        timeout_val = config.get('timeout', 3000000)
         try:
-            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
+            timeout_int = int(timeout_val) if timeout_val else 3000000
+            # 如果值小于等于3600（1小时），当作秒处理，转换为毫秒
+            if timeout_int <= 3600:
+                timeout_int = timeout_int * 1000
+            timeout = timeout_int / 1000
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 3000
 
         base_url = config.get('base_url', 'https://api.minimax.chat/v1')
 
@@ -206,11 +210,15 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 3000000)
+        timeout_val = config.get('timeout', 3000000)
         try:
-            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
+            timeout_int = int(timeout_val) if timeout_val else 3000000
+            # 如果值小于等于3600（1小时），当作秒处理，转换为毫秒
+            if timeout_int <= 3600:
+                timeout_int = timeout_int * 1000
+            timeout = timeout_int / 1000
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 3000
 
         base_url = config.get('base_url', 'https://api.moonshot.cn/v1')
 
@@ -267,11 +275,15 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 3000000)
+        timeout_val = config.get('timeout', 3000000)
         try:
-            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
+            timeout_int = int(timeout_val) if timeout_val else 3000000
+            # 如果值小于等于3600（1小时），当作秒处理，转换为毫秒
+            if timeout_int <= 3600:
+                timeout_int = timeout_int * 1000
+            timeout = timeout_int / 1000
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 3000
 
         base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
 
@@ -332,11 +344,15 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout_ms = config.get('timeout', 3000000)
+        timeout_val = config.get('timeout', 3000000)
         try:
-            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
+            timeout_int = int(timeout_val) if timeout_val else 3000000
+            # 如果值小于等于3600（1小时），当作秒处理，转换为毫秒
+            if timeout_int <= 3600:
+                timeout_int = timeout_int * 1000
+            timeout = timeout_int / 1000
         except (ValueError, TypeError):
-            timeout = 30
+            timeout = 3000
 
         base_url = config.get('base_url', 'https://api.example.com/v1')
         
