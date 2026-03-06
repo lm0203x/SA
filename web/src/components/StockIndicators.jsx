@@ -222,16 +222,16 @@ export default function StockIndicators({ stockInfo, loading: parentLoading }) {
               </div>
               
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500 mb-1">总市值</div>
+                <div className="text-sm text-gray-500 mb-1">总市值(亿)</div>
                 <div className="text-lg font-semibold text-red-600">
-                  {formatNumber(latestBasic.total_mv)}
+                  {formatNumber(latestBasic.total_mv / 10000)}
                 </div>
               </div>
-              
+
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500 mb-1">流通市值</div>
+                <div className="text-sm text-gray-500 mb-1">流通市值(亿)</div>
                 <div className="text-lg font-semibold text-indigo-600">
-                  {formatNumber(latestBasic.circ_mv)}
+                  {formatNumber(latestBasic.circ_mv / 10000)}
                 </div>
               </div>
               

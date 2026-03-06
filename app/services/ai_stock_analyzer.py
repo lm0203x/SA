@@ -436,7 +436,7 @@ class AIStockAnalyzer:
 换手率:{turnover_rate:.2f}%
 市盈率(PE):{pe_ratio:.2f}
 市净率(PB):{pb_ratio:.2f}
-总市值:{total_mv/100000000:.2f}亿
+总市值:{total_mv/10000:.2f}亿
 市场状态:{market_status}
 
 【最新资讯】
