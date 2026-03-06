@@ -16,6 +16,28 @@ export default function AIRecommendation() {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [showConfigDialog, setShowConfigDialog] = useState(false);
     const [aiConfigured, setAiConfigured] = useState(false);
+    const [watchlist, setWatchlist] = useState([]);
+    const [loadingWatchlist, setLoadingWatchlist] = useState(true);
+
+    // 获取自选股列表
+    useEffect(() => {
+        fetchWatchlist();
+    }, []);
+
+    const fetchWatchlist = async () => {
+        try {
+            const response = await fetch('/api/watchlist');
+            const data = await response.json();
+            if (data.success) {
+                setWatchlist(data.data || []);
+            }
+        } catch (error) {
+            console.error('获取自选股列表失败:', error);
+        } finally {
+            setLoadingWatchlist(false);
+        }
+    };
+
     // 检查 AI 是否已配置
     useEffect(() => {
         checkAIConfig();
@@ -203,23 +225,37 @@ export default function AIRecommendation() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* 股票输入 */}
+                    {/* 股票选择 */}
                     <div className="flex gap-2">
                         <div className="flex-1">
-                            <Input
-                                placeholder="输入股票代码，例如：000001.SZ"
-                                value={selectedStock}
-                                onChange={(e) => setSelectedStock(e.target.value)}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleAnalyze();
-                                    }
-                                }}
-                            />
+                            {loadingWatchlist ? (
+                                <Input placeholder="加载自选股..." disabled />
+                            ) : watchlist.length > 0 ? (
+                                <Select
+                                    value={selectedStock}
+                                    onValueChange={(value) => setSelectedStock(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择自选股" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {watchlist.map((stock) => (
+                                            <SelectItem key={stock.ts_code} value={stock.ts_code}>
+                                                {stock.ts_code} - {stock.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Input
+                                    placeholder="暂无自选股，请先添加自选股"
+                                    disabled
+                                />
+                            )}
                         </div>
                         <Button
                             onClick={handleAnalyze}
-                            disabled={analyzing || !selectedStock.trim()}
+                            disabled={analyzing || !selectedStock.trim() || watchlist.length === 0}
                         >
                             {analyzing ? (
                                 <>
