@@ -35,7 +35,7 @@ export default function AIConfigDialog({ open, onClose }) {
 
     // 新建配置表单
     const [newConfigForm, setNewConfigForm] = useState({
-        provider_type: 'tongyi',
+        provider_type: 'zhipu',
         provider_name: '',
         config_data: {},
         is_active: false,
@@ -165,7 +165,7 @@ export default function AIConfigDialog({ open, onClose }) {
                 setMessage({ type: 'success', text: '✅ AI配置创建成功' });
                 setShowCreateForm(false);
                 setNewConfigForm({
-                    provider_type: 'tongyi',
+                    provider_type: 'zhipu',
                     provider_name: '',
                     config_data: {},
                     is_active: false,
@@ -240,20 +240,25 @@ export default function AIConfigDialog({ open, onClose }) {
         const typeInfo = getTypeInfo(providerType);
         if (!typeInfo.required_fields) return null;
 
-        const allFields = [...typeInfo.required_fields, ...(typeInfo.optional_fields || [])];
+        // 只显示required_fields（api_key和model），不显示base_url和timeout
+        const visibleFields = typeInfo.required_fields.filter(field =>
+            field !== 'base_url' && field !== 'timeout'
+        );
+        const fixedFields = typeInfo.fixed_fields || [];
 
-        return allFields.map(field => {
+        return visibleFields.map(field => {
             const isRequired = typeInfo.required_fields.includes(field);
             const defaultValue = typeInfo.default_config?.[field] || '';
 
             return (
                 <div key={field}>
                     <Label htmlFor={`field-${field}`}>
-                        {field} {isRequired && <span className="text-red-500">*</span>}
+                        {field === 'api_key' ? 'API Key' : field === 'model' ? '模型' : field}
+                        {isRequired && <span className="text-red-500">*</span>}
                     </Label>
                     <Input
                         id={`field-${field}`}
-                        type={field.includes('key') ? 'password' : 'text'}
+                        type={field === 'api_key' ? 'password' : 'text'}
                         placeholder={defaultValue ? `默认: ${defaultValue}` : ''}
                         value={configData[field] || ''}
                         onChange={(e) => onChange(field, e.target.value)}
@@ -273,7 +278,7 @@ export default function AIConfigDialog({ open, onClose }) {
                         AI服务配置
                     </DialogTitle>
                     <DialogDescription>
-                        配置AI服务提供商，支持通义千问、OpenAI、Ollama等多种AI服务
+                        配置AI服务提供商，支持智谱GLM、Minmax、Kimi等AI服务
                     </DialogDescription>
                 </DialogHeader>
 
@@ -365,7 +370,7 @@ export default function AIConfigDialog({ open, onClose }) {
                                         onClick={() => {
                                             setShowCreateForm(false);
                                             setNewConfigForm({
-                                                provider_type: 'tongyi',
+                                                provider_type: 'zhipu',
                                                 provider_name: '',
                                                 config_data: {},
                                                 is_active: false,

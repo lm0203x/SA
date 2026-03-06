@@ -23,19 +23,19 @@ class AIStockAnalyzer:
             # 优先从数据库AI配置加载
             from app.models.ai_config import AIConfig
             self.config = AIConfig.get_config_dict()
-            self.provider = self.config.get('provider', 'tongyi')
+            self.provider = self.config.get('provider', 'zhipu')
         except Exception as e:
             logger.warning(f"从数据库AI配置加载失败,使用默认配置: {e}")
             # 回退到系统配置
             try:
                 from app.models.system_config import SystemConfig
                 self.config = SystemConfig.get_ai_config()
-                self.provider = self.config.get('provider', 'tongyi')
+                self.provider = self.config.get('provider', 'zhipu')
             except Exception as e2:
                 logger.warning(f"从系统配置加载AI配置失败: {e2}")
                 # 回退到应用配置
                 self.config = current_app.config.get('AI_CONFIG', {})
-                self.provider = self.config.get('provider', 'tongyi')
+                self.provider = self.config.get('provider', 'zhipu')
 
     def reload_config(self):
         """重新加载配置"""
@@ -109,14 +109,12 @@ class AIStockAnalyzer:
     def _call_ai_api(self, prompt):
         """调用AI API"""
         try:
-            if self.provider == 'tongyi':
-                return self._call_tongyi_api(prompt)
-            elif self.provider == 'openai':
-                return self._call_openai_api(prompt)
-            elif self.provider == 'zhipu':
+            if self.provider == 'zhipu':
                 return self._call_zhipu_api(prompt)
-            elif self.provider == 'ollama':
-                return self._call_ollama_api(prompt)
+            elif self.provider == 'minmax':
+                return self._call_minmax_api(prompt)
+            elif self.provider == 'kimi':
+                return self._call_kimi_api(prompt)
             elif self.provider == 'custom':
                 return self._call_custom_api(prompt)
             else:
@@ -126,9 +124,9 @@ class AIStockAnalyzer:
             logger.error(f"AI API调用失败: {e}")
             raise e
 
-    def _call_tongyi_api(self, prompt):
-        """调用通义千问API"""
-        config = self.config['tongyi']
+    def _call_minmax_api(self, prompt):
+        """调用Minmax API"""
+        config = self.config.get('minmax', {})
 
         headers = {
             'Authorization': f'Bearer {config["api_key"]}',
@@ -136,32 +134,30 @@ class AIStockAnalyzer:
         }
 
         data = {
-            "model": config.get("model", "qwen-plus"),
-            "input": {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            },
-            "parameters": {
-                "temperature": 0.1
-            }
+            "model": config.get("model", "abab6.5s-chat"),
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.1,
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 600)
+        timeout_ms = config.get('timeout', 30000)
         try:
-            timeout = int(timeout) if timeout else 600
+            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
-            timeout = 600
+            timeout = 30
+
+        base_url = config.get('base_url', 'https://api.minimax.chat/v1')
 
         # 记录请求日志
-        logger.info(f"调用通义千问API请求: {json.dumps(data, ensure_ascii=False)}")
+        logger.info(f"调用Minmax API请求: {json.dumps(data, ensure_ascii=False)}")
 
         response = requests.post(
-            f"{config['base_url']}/services/aigc/text-generation/generation",
+            f"{base_url}/text/chatcompletion_v2",
             headers=headers,
             json=data,
             timeout=timeout
@@ -169,16 +165,29 @@ class AIStockAnalyzer:
 
         if response.status_code == 200:
             result = response.json()
-            return result['output']['text']
+            logger.info(f"Minmax API原始响应: {json.dumps(result, ensure_ascii=False)}")
+
+            if 'choices' in result and len(result['choices']) > 0:
+                return result['choices'][0]['message']['content']
+            else:
+                error_msg = f"Minmax API响应格式错误: {result}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
         else:
-            error_msg = f"通义千问API调用失败: {response.status_code}"
-            if response.text:
-                error_msg += f", {response.text}"
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_info = error_data['error']
+                    error_msg = f"Minmax API调用失败: {response.status_code}, 错误: {error_info.get('message', 'unknown')}"
+                else:
+                    error_msg = f"Minmax API调用失败: {response.status_code}, {error_data}"
+            except:
+                error_msg = f"Minmax API调用失败: {response.status_code}, {response.text}"
             raise Exception(error_msg)
 
-    def _call_openai_api(self, prompt):
-        """调用OpenAI API"""
-        config = self.config['openai']
+    def _call_kimi_api(self, prompt):
+        """调用Kimi API"""
+        config = self.config.get('kimi', {})
 
         headers = {
             'Authorization': f'Bearer {config["api_key"]}',
@@ -186,28 +195,28 @@ class AIStockAnalyzer:
         }
 
         data = {
-            "model": config.get("model", "gpt-3.5-turbo"),
+            "model": config.get("model", "moonshot-v1-8k"),
             "messages": [
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "temperature": 0.1
+            "temperature": 0.1,
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 600)
+        timeout_ms = config.get('timeout', 30000)
         try:
-            timeout = int(timeout) if timeout else 600
+            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
-            timeout = 600
+            timeout = 30
 
-        base_url = config.get('base_url', 'https://api.openai.com/v1')
-        
+        base_url = config.get('base_url', 'https://api.moonshot.cn/v1')
+
         # 记录请求日志
-        logger.info(f"调用OpenAI API请求: {json.dumps(data, ensure_ascii=False)}")
-        
+        logger.info(f"调用Kimi API请求: {json.dumps(data, ensure_ascii=False)}")
+
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
@@ -217,48 +226,24 @@ class AIStockAnalyzer:
 
         if response.status_code == 200:
             result = response.json()
-            return result['choices'][0]['message']['content']
+            logger.info(f"Kimi API原始响应: {json.dumps(result, ensure_ascii=False)}")
+
+            if 'choices' in result and len(result['choices']) > 0:
+                return result['choices'][0]['message']['content']
+            else:
+                error_msg = f"Kimi API响应格式错误: {result}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
         else:
-            error_msg = f"OpenAI API调用失败: {response.status_code}"
-            if response.text:
-                error_msg += f", {response.text}"
-            raise Exception(error_msg)
-
-    def _call_ollama_api(self, prompt):
-        """调用Ollama本地API"""
-        config = self.config.get('ollama', {})
-
-        # 获取并验证timeout
-        timeout = config.get('timeout', 30)
-        try:
-            timeout = int(timeout) if timeout else 30
-        except (ValueError, TypeError):
-            timeout = 30
-
-        # 记录请求日志
-        request_data = {
-            "model": config.get('model', 'qwen2.5-coder'),
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.1
-            }
-        }
-        logger.info(f"调用Ollama API请求: {json.dumps(request_data, ensure_ascii=False)}")
-
-        response = requests.post(
-            f"{config.get('base_url', 'http://localhost:11434')}/api/generate",
-            json=request_data,
-            timeout=timeout
-        )
-
-        if response.status_code == 200:
-            result = response.json()
-            return result['response']
-        else:
-            error_msg = f"Ollama API调用失败: {response.status_code}"
-            if response.text:
-                error_msg += f", {response.text}"
+            try:
+                error_data = response.json()
+                if 'error' in error_data:
+                    error_info = error_data['error']
+                    error_msg = f"Kimi API调用失败: {response.status_code}, 错误: {error_info.get('message', 'unknown')}"
+                else:
+                    error_msg = f"Kimi API调用失败: {response.status_code}, {error_data}"
+            except:
+                error_msg = f"Kimi API调用失败: {response.status_code}, {response.text}"
             raise Exception(error_msg)
 
     def _call_zhipu_api(self, prompt):
@@ -271,7 +256,7 @@ class AIStockAnalyzer:
         }
 
         data = {
-            "model": config.get("model", "glm-4"),
+            "model": config.get("model", "glm-4-flash"),
             "messages": [
                 {
                     "role": "user",
@@ -282,17 +267,17 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 600)
+        timeout_ms = config.get('timeout', 30000)
         try:
-            timeout = int(timeout) if timeout else 600
+            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
-            timeout = 600
+            timeout = 30
 
         base_url = config.get('base_url', 'https://open.bigmodel.cn/api/paas/v4')
-        
+
         # 记录请求日志
         logger.info(f"调用智谱GLM API请求: {json.dumps(data, ensure_ascii=False)}")
-        
+
         response = requests.post(
             f"{base_url}/chat/completions",
             headers=headers,
@@ -304,7 +289,7 @@ class AIStockAnalyzer:
             result = response.json()
             # 记录原始响应日志
             logger.info(f"智谱GLM API原始响应: {json.dumps(result, ensure_ascii=False)}")
-            
+
             # 智谱GLM使用与OpenAI相同的响应格式
             if 'choices' in result and len(result['choices']) > 0:
                 return result['choices'][0]['message']['content']
@@ -347,11 +332,11 @@ class AIStockAnalyzer:
         }
 
         # 获取并验证timeout
-        timeout = config.get('timeout', 600)
+        timeout_ms = config.get('timeout', 30000)
         try:
-            timeout = int(timeout) if timeout else 600
+            timeout = int(timeout_ms) / 1000 if timeout_ms else 30
         except (ValueError, TypeError):
-            timeout = 600
+            timeout = 30
 
         base_url = config.get('base_url', 'https://api.example.com/v1')
         

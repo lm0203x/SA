@@ -103,23 +103,30 @@ class AIConfig(db.Model):
         config = cls.get_active_config()
         if not config:
             return {
-                'provider': 'tongyi',
-                'tongyi': {
+                'provider': 'zhipu',
+                'zhipu': {
                     'api_key': '',
-                    'model': 'qwen-plus',
-                    'base_url': 'https://dashscope.aliyuncs.com/api/v1',
-                    'timeout': 600
+                    'model': 'glm-4-flash',
+                    'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+                    'timeout': 30000
                 },
-                'openai': {
+                'minmax': {
                     'api_key': '',
-                    'model': 'gpt-3.5-turbo',
-                    'base_url': 'https://api.openai.com/v1',
-                    'timeout': 600
+                    'model': 'abab6.5s-chat',
+                    'base_url': 'https://api.minimax.chat/v1',
+                    'timeout': 30000
                 },
-                'ollama': {
-                    'base_url': 'http://localhost:11434',
-                    'model': 'qwen2.5-coder',
-                    'timeout': 600
+                'kimi': {
+                    'api_key': '',
+                    'model': 'moonshot-v1-8k',
+                    'base_url': 'https://api.moonshot.cn/v1',
+                    'timeout': 30000
+                },
+                'custom': {
+                    'api_key': '',
+                    'model': 'custom-model',
+                    'base_url': 'https://your-api-endpoint.com/v1',
+                    'timeout': 30000
                 }
             }
 
@@ -134,22 +141,29 @@ class AIConfig(db.Model):
 
         # 添加默认配置（确保结构完整）
         default_configs = {
-            'tongyi': {
+            'zhipu': {
                 'api_key': '',
-                'model': 'qwen-plus',
-                'base_url': 'https://dashscope.aliyuncs.com/api/v1',
-                'timeout': 600
+                'model': 'glm-4-flash',
+                'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+                'timeout': 30000
             },
-            'openai': {
+            'minmax': {
                 'api_key': '',
-                'model': 'gpt-3.5-turbo',
-                'base_url': 'https://api.openai.com/v1',
-                'timeout': 600
+                'model': 'abab6.5s-chat',
+                'base_url': 'https://api.minimax.chat/v1',
+                'timeout': 30000
             },
-            'ollama': {
-                'base_url': 'http://localhost:11434',
-                'model': 'qwen2.5-coder',
-                'timeout': 600
+            'kimi': {
+                'api_key': '',
+                'model': 'moonshot-v1-8k',
+                'base_url': 'https://api.moonshot.cn/v1',
+                'timeout': 30000
+            },
+            'custom': {
+                'api_key': '',
+                'model': 'custom-model',
+                'base_url': 'https://your-api-endpoint.com/v1',
+                'timeout': 30000
             }
         }
 

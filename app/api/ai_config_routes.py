@@ -40,7 +40,7 @@ def create_ai_config():
             }), 400
 
         # 验证AI提供者类型
-        valid_providers = ['tongyi', 'openai', 'zhipu', 'ollama', 'custom']
+        valid_providers = ['zhipu', 'minmax', 'kimi', 'custom']
         if data['provider_type'] not in valid_providers:
             return jsonify({
                 'success': False,
@@ -322,51 +322,39 @@ def get_ai_config_types():
     try:
         types = [
             {
-                'type': 'tongyi',
-                'name': '通义千问',
-                'description': '阿里云通义千问大语言模型',
-                'required_fields': ['api_key', 'model'],
-                'optional_fields': ['base_url', 'timeout'],
-                'default_config': {
-                    'model': 'qwen-plus',
-                    'base_url': 'https://dashscope.aliyuncs.com/api/v1',
-                    'timeout': 30
-                }
-            },
-            {
-                'type': 'openai',
-                'name': 'OpenAI',
-                'description': 'OpenAI GPT系列模型',
-                'required_fields': ['api_key', 'model'],
-                'optional_fields': ['base_url', 'timeout'],
-                'default_config': {
-                    'model': 'gpt-3.5-turbo',
-                    'base_url': 'https://api.openai.com/v1',
-                    'timeout': 30
-                }
-            },
-            {
                 'type': 'zhipu',
                 'name': '智谱GLM',
                 'description': '智谱AI GLM系列模型',
                 'required_fields': ['api_key', 'model'],
-                'optional_fields': ['base_url', 'timeout'],
+                'fixed_fields': ['base_url'],
                 'default_config': {
-                    'model': 'glm-4',
+                    'model': 'glm-4-flash',
                     'base_url': 'https://open.bigmodel.cn/api/paas/v4',
-                    'timeout': 30
+                    'timeout': 30000
                 }
             },
             {
-                'type': 'ollama',
-                'name': 'Ollama',
-                'description': '本地部署的Ollama服务',
-                'required_fields': [],
-                'optional_fields': ['base_url', 'model', 'timeout'],
+                'type': 'minmax',
+                'name': 'Minmax',
+                'description': 'Minimax abab系列模型',
+                'required_fields': ['api_key', 'model'],
+                'fixed_fields': ['base_url'],
                 'default_config': {
-                    'base_url': 'http://localhost:11434',
-                    'model': 'qwen2.5-coder',
-                    'timeout': 30
+                    'model': 'abab6.5s-chat',
+                    'base_url': 'https://api.minimax.chat/v1',
+                    'timeout': 30000
+                }
+            },
+            {
+                'type': 'kimi',
+                'name': 'Kimi',
+                'description': '月之暗面Moonshot AI',
+                'required_fields': ['api_key', 'model'],
+                'fixed_fields': ['base_url'],
+                'default_config': {
+                    'model': 'moonshot-v1-8k',
+                    'base_url': 'https://api.moonshot.cn/v1',
+                    'timeout': 30000
                 }
             },
             {
@@ -374,11 +362,11 @@ def get_ai_config_types():
                 'name': '自定义',
                 'description': '自定义AI服务（兼容OpenAI格式）',
                 'required_fields': ['api_key', 'model', 'base_url'],
-                'optional_fields': ['timeout'],
+                'fixed_fields': [],
                 'default_config': {
                     'model': 'custom-model',
                     'base_url': 'https://your-api-endpoint.com/v1',
-                    'timeout': 30
+                    'timeout': 30000
                 }
             }
         ]
