@@ -14,6 +14,7 @@ import WatchlistManager from '@/components/WatchlistManager';
 import AnalysisRecords from '@/components/AnalysisRecords';
 import AIRecommendation from '@/components/AIRecommendation';
 import AnalysisRules from '@/components/AnalysisRules';
+import WebhookConfig from '@/components/WebhookConfig';
 
 
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 const StockDashboard = () => {
   const navigate = useNavigate();
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
@@ -69,6 +71,10 @@ const StockDashboard = () => {
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                 返回首页
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowWebhookConfig(true)}>
+                <Webhook className="w-4 h-4 mr-1" />
+                Webhook配置
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowCreateUser(true)}>
                 <UserPlus className="w-4 h-4 mr-1" />
@@ -123,6 +129,15 @@ const StockDashboard = () => {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showWebhookConfig} onOpenChange={setShowWebhookConfig}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Webhook配置</DialogTitle>
+            </DialogHeader>
+            <WebhookConfig />
+          </DialogContent>
+        </Dialog>
+
         {/* 标签页导航 */}
         <Tabs defaultValue="stocks" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
@@ -136,11 +151,11 @@ const StockDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
-              <span>预警规则</span>
+              <span>分析策略</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4" />
-              <span>预警记录</span>
+              <span>分析记录</span>
             </TabsTrigger>
             <TabsTrigger value="datasource" className="flex items-center space-x-2">
               <Database className="w-4 h-4" />
@@ -157,7 +172,7 @@ const StockDashboard = () => {
             <WatchlistManager />
           </TabsContent>
 
-          {/* 预警规则页面 */}
+          {/* 分析策略页面 */}
           <TabsContent value="rules" className="space-y-6">
             <AnalysisRules />
           </TabsContent>
@@ -167,7 +182,7 @@ const StockDashboard = () => {
             <DataSourceConfig />
           </TabsContent>
 
-          {/* 预警记录页面 */}
+          {/* 分析记录页面 */}
           <TabsContent value="alerts" className="space-y-6">
             <AnalysisRecords />
           </TabsContent>

@@ -391,35 +391,6 @@ export default function WatchlistManager() {
                       </Button>
                     </div>
 
-                    {/* AI 推送配置 */}
-                    <div className="mt-2 pt-2 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={stock.push_enabled || false}
-                            onChange={(e) => handlePushConfigChange(stock.id, 'push_enabled', e.target.checked)}
-                            className="w-4 h-4 text-blue-600 rounded"
-                          />
-                          <span className={stock.push_enabled ? 'text-blue-600 font-medium' : 'text-gray-500'}>
-                            AI推送
-                          </span>
-                        </label>
-                        {stock.push_enabled && (
-                          <input
-                            type="time"
-                            value={stock.push_time || '08:30'}
-                            onChange={(e) => handlePushConfigChange(stock.id, 'push_time', e.target.value)}
-                            className="text-xs px-2 py-1 border rounded"
-                          />
-                        )}
-                        {stock.push_enabled && stock.last_push_at && (
-                          <span className="text-xs text-gray-400">
-                            已推送: {new Date(stock.last_push_at).toLocaleString('zh-CN')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -429,6 +400,76 @@ export default function WatchlistManager() {
 
         {/* 右侧：K线图和指标数据 */}
         <div className="lg:col-span-2 space-y-6">
+          {selectedStock && (
+            <Card>
+              <CardHeader>
+                <CardTitle>当前股票概览</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                  <div>
+                    <p className="text-sm text-gray-500">收盘价</p>
+                    <p className="text-xl font-semibold text-gray-900">
+                      {selectedStock.latest_close ?? '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">涨跌幅</p>
+                    <p
+                      className={`text-xl font-semibold ${
+                        (selectedStock.latest_pct_chg ?? 0) >= 0 ? 'text-red-500' : 'text-green-600'
+                      }`}
+                    >
+                      {selectedStock.latest_pct_chg !== null && selectedStock.latest_pct_chg !== undefined
+                        ? `${selectedStock.latest_pct_chg >= 0 ? '+' : ''}${selectedStock.latest_pct_chg}%`
+                        : '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">行情日期</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {selectedStock.latest_trade_date || '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">最后同步</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {selectedStock.last_sync ? new Date(selectedStock.last_sync).toLocaleString('zh-CN') : '--'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedStock.push_enabled || false}
+                        onChange={(e) => handlePushConfigChange(selectedStock.id, 'push_enabled', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className={selectedStock.push_enabled ? 'text-blue-600 font-medium' : 'text-gray-500'}>
+                        AI推送
+                      </span>
+                    </label>
+                    <input
+                      type="time"
+                      value={selectedStock.push_time || '08:30'}
+                      onChange={(e) => handlePushConfigChange(selectedStock.id, 'push_time', e.target.value)}
+                      disabled={!selectedStock.push_enabled}
+                      className="text-sm px-3 py-2 border rounded disabled:bg-gray-100 disabled:text-gray-400"
+                    />
+                    {selectedStock.push_enabled && selectedStock.last_push_at && (
+                      <span className="text-sm text-gray-500">
+                        已推送: {new Date(selectedStock.last_push_at).toLocaleString('zh-CN')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* K线图 */}
           <StockChart 
             data={chartData}

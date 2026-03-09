@@ -10,6 +10,7 @@ import uuid
 from app.api import api_bp
 from app.extensions import db, socketio
 from app.models.watchlist import Watchlist
+from app.models.stock_daily_history import StockDailyHistory
 from app.services.tushare_service import TushareService
 from app.services.stock_data_service import StockDataService
 from app.services.alert_trigger_engine import alert_trigger_engine
@@ -21,10 +22,21 @@ def get_watchlist():
     """获取自选股列表"""
     try:
         watchlist = Watchlist.query.order_by(Watchlist.added_at.desc()).all()
-        
+
+        watchlist_data = []
+        for stock in watchlist:
+            stock_data = stock.to_dict()
+            latest_daily = StockDailyHistory.query.filter_by(ts_code=stock.ts_code).order_by(
+                StockDailyHistory.trade_date.desc()
+            ).first()
+            stock_data['latest_close'] = float(latest_daily.close) if latest_daily and latest_daily.close is not None else None
+            stock_data['latest_pct_chg'] = float(latest_daily.pct_chg) if latest_daily and latest_daily.pct_chg is not None else None
+            stock_data['latest_trade_date'] = latest_daily.trade_date.isoformat() if latest_daily and latest_daily.trade_date else None
+            watchlist_data.append(stock_data)
+
         return jsonify({
             'success': True,
-            'data': [stock.to_dict() for stock in watchlist],
+            'data': watchlist_data,
             'total': len(watchlist)
         })
     
