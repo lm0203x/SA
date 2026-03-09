@@ -182,6 +182,17 @@ export default function AIRecommendation() {
         }
     };
 
+    const getNewsSentimentStyle = (sentiment) => {
+        switch (sentiment) {
+            case 'positive':
+                return { color: 'bg-green-100 text-green-800', text: '偏正面' };
+            case 'negative':
+                return { color: 'bg-red-100 text-red-800', text: '偏负面' };
+            default:
+                return { color: 'bg-gray-100 text-gray-800', text: '偏中性' };
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* 消息提示 */}
@@ -334,6 +345,43 @@ export default function AIRecommendation() {
                                     {/* 推荐理由 */}
                                     <div>
                                         <h4 className="font-medium mb-2">分析理由：</h4>
+                                        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                            <div className="mb-3 flex items-center justify-between">
+                                                <h4 className="font-medium text-slate-900">近期新闻影响</h4>
+                                                <Badge className={getNewsSentimentStyle(recommendation.news_sentiment).color}>
+                                                    {getNewsSentimentStyle(recommendation.news_sentiment).text}
+                                                </Badge>
+                                            </div>
+                                            <div className="mb-3 grid gap-3 md:grid-cols-2">
+                                                <div>
+                                                    <div className="text-xs text-slate-500">新闻影响分</div>
+                                                    <div className="text-lg font-semibold text-slate-900">
+                                                        {recommendation.news_impact_score ?? 0}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs text-slate-500">新闻风险提示</div>
+                                                    <div className="text-sm text-slate-700">
+                                                        {recommendation.news_risk_note || '--'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="mb-2 text-xs text-slate-500">关键新闻</div>
+                                                {recommendation.news_highlights?.length ? (
+                                                    <ul className="space-y-1">
+                                                        {recommendation.news_highlights.map((item, index) => (
+                                                            <li key={index} className="flex items-start text-sm text-slate-700">
+                                                                <span className="mr-2 text-slate-400">•</span>
+                                                                <span>{item}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <div className="text-sm text-slate-500">--</div>
+                                                )}
+                                            </div>
+                                        </div>
                                         <ul className="space-y-1">
                                             {recommendation.reasons?.map((reason, index) => (
                                                 <li key={index} className="text-sm text-gray-700 flex items-start">

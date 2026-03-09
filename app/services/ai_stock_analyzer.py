@@ -54,6 +54,7 @@ class AIStockAnalyzer:
         Returns:
             分析结果字典
         """
+        news_analysis = self._analyze_news_impact(stock_data.get('news_list', []))
         try:
             # 检查配置
             if not self._check_config():
@@ -81,7 +82,11 @@ class AIStockAnalyzer:
                 'ts_code': ts_code,
                 'stock_name': stock_name,
                 'analysis_time': datetime.now().isoformat(),
-                'ai_provider': self.provider
+                'ai_provider': self.provider,
+                'news_sentiment': news_analysis['sentiment'],
+                'news_impact_score': news_analysis['impact_score'],
+                'news_highlights': news_analysis['highlights'],
+                'news_risk_note': news_analysis['risk_note']
             })
 
             logger.info(f"AI分析完成: {ts_code} - {result['recommendation']}")
@@ -89,7 +94,14 @@ class AIStockAnalyzer:
 
         except Exception as e:
             logger.error(f"AI分析失败: {e}")
-            return self._get_default_result(ts_code, stock_name, f"分析失败: {str(e)}")
+            result = self._get_default_result(ts_code, stock_name, f"分析失败: {str(e)}")
+            result.update({
+                'news_sentiment': news_analysis['sentiment'],
+                'news_impact_score': news_analysis['impact_score'],
+                'news_highlights': news_analysis['highlights'],
+                'news_risk_note': news_analysis['risk_note']
+            })
+            return result
 
     def _check_config(self):
         """检查AI配置是否有效"""
@@ -400,6 +412,8 @@ class AIStockAnalyzer:
         pb_ratio = stock_data.get('pb_ratio', 0)
         turnover_rate = stock_data.get('turnover_rate', 0)
         total_mv = stock_data.get('total_mv', 0)
+        news_analysis = self._analyze_news_impact(stock_data.get('news_list', []))
+        news_summary = self._build_news_prompt_section(news_analysis)
         news = stock_data.get('news', '暂无最新资讯')
 
         # 判断市场状态
@@ -532,6 +546,79 @@ class AIStockAnalyzer:
         else:
             return "横盘震荡"
 
+    def _analyze_news_impact(self, news_list):
+        """杩斿洖鏂伴椈鎯呯华鍜屽奖鍝嶅己搴︾殑鏈€灏忕粨鏋?"""
+        normalized_news = [item for item in (news_list or []) if item and item.get('title')]
+        if not normalized_news:
+            return {
+                'sentiment': 'neutral',
+                'impact_score': 0,
+                'highlights': [],
+                'risk_note': '\u6682\u65e0\u660e\u786e\u65b0\u95fb\u5f71\u54cd',
+            }
+
+        positive_keywords = [
+            '\u589e\u957f', '\u9884\u589e', '\u5408\u540c', '\u7a81\u7834', '\u56de\u8d2d',
+            '\u4e0a\u6da8', '\u6539\u5584', '\u5229\u597d', '\u4e2d\u6807', '\u589e\u6301'
+        ]
+        negative_keywords = [
+            '\u4e8f\u635f', '\u4e0b\u6ed1', '\u5904\u7f5a', '\u8c03\u67e5', '\u51cf\u6301',
+            '\u8dcc\u8dcc', '\u8fdd\u89c4', '\u98ce\u9669', '\u8bc9\u53f8', '\u8d1f\u9762'
+        ]
+        high_impact_keywords = [
+            '\u5e74\u62a5', '\u5b63\u62a5', '\u516c\u544a', '\u91cd\u7ec4', '\u5e76\u8d2d',
+            '\u505c\u724c', '\u590d\u724c', '\u76d1\u7ba1', '\u653f\u7b56'
+        ]
+
+        positive_hits = 0
+        negative_hits = 0
+        impact_hits = 0
+        highlights = []
+
+        for item in normalized_news[:3]:
+            title = item.get('title', '')
+            highlights.append(title)
+            positive_hits += self._count_keyword_hits(title, positive_keywords)
+            negative_hits += self._count_keyword_hits(title, negative_keywords)
+            impact_hits += self._count_keyword_hits(title, high_impact_keywords)
+
+        if positive_hits > negative_hits:
+            sentiment = 'positive'
+        elif negative_hits > positive_hits:
+            sentiment = 'negative'
+        else:
+            sentiment = 'neutral'
+
+        impact_score = min(100, len(normalized_news) * 15 + impact_hits * 20 + abs(positive_hits - negative_hits) * 10)
+
+        if sentiment == 'negative':
+            risk_note = '\u8fd1\u671f\u8d44\u8baf\u504f\u8d1f\u9762\uff0c\u5efa\u8bae\u5728\u63a8\u8350\u89e3\u8bfb\u4e2d\u5f3a\u5316\u98ce\u9669\u63d0\u793a'
+        elif sentiment == 'positive':
+            risk_note = '\u8fd1\u671f\u8d44\u8baf\u504f\u6b63\u9762\uff0c\u53ef\u4f5c\u4e3a\u77ed\u671f\u60c5\u7eea\u52a0\u5206\u56e0\u5b50'
+        else:
+            risk_note = '\u8fd1\u671f\u8d44\u8baf\u504f\u4e2d\u6027\uff0c\u5bf9\u63a8\u8350\u7684\u5f71\u54cd\u6709\u9650'
+
+        return {
+            'sentiment': sentiment,
+            'impact_score': impact_score,
+            'highlights': highlights,
+            'risk_note': risk_note,
+        }
+
+    def _build_news_prompt_section(self, news_analysis):
+        highlights = news_analysis.get('highlights') or []
+        highlight_text = '\uff1b'.join(highlights) if highlights else '\u6682\u65e0\u5173\u952e\u65b0\u95fb'
+        default_risk_note = '\u6682\u65e0'
+        return (
+            f"\u60c5\u7eea\u503e\u5411: {news_analysis.get('sentiment', 'neutral')}\uff1b"
+            f"\u5f71\u54cd\u5f3a\u5ea6: {news_analysis.get('impact_score', 0)}\uff1b"
+            f"\u5173\u952e\u65b0\u95fb: {highlight_text}\uff1b"
+            f"\u98ce\u9669\u63d0\u793a: {news_analysis.get('risk_note', default_risk_note)}"
+        )
+
+    def _count_keyword_hits(self, text, keywords):
+        return sum(1 for keyword in keywords if keyword and keyword in (text or ''))
+
     def _parse_response(self, response_text):
         """解析AI响应"""
         try:
@@ -601,6 +688,10 @@ class AIStockAnalyzer:
             'target_price': 0.0,
             'risk_level': 'medium',
             'confidence': 0.0,
+            'news_sentiment': 'neutral',
+            'news_impact_score': 0,
+            'news_highlights': [],
+            'news_risk_note': '\u6682\u65e0\u660e\u786e\u65b0\u95fb\u5f71\u54cd',
             'ts_code': ts_code,
             'stock_name': stock_name,
             'analysis_time': datetime.now().isoformat(),
