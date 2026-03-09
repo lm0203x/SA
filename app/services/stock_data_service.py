@@ -19,6 +19,25 @@ from app.services.tushare_service import TushareService
 
 class StockDataService:
     """股票数据服务类 - 负责数据获取和缓存"""
+
+    DAILY_BASIC_FIELDS = [
+        'close',
+        'turnover_rate',
+        'turnover_rate_f',
+        'volume_ratio',
+        'pe',
+        'pe_ttm',
+        'pb',
+        'ps',
+        'ps_ttm',
+        'dv_ratio',
+        'dv_ttm',
+        'total_share',
+        'float_share',
+        'free_share',
+        'total_mv',
+        'circ_mv',
+    ]
     
     @staticmethod
     def get_active_tushare_service() -> Optional[TushareService]:
@@ -353,8 +372,17 @@ class StockDataService:
                     'message': '未获取到每日指标数据'
                 }
             
+            def clean_value(value):
+                import math
+                if value is None:
+                    return None
+                if isinstance(value, (int, float)) and math.isnan(value):
+                    return None
+                return value
+
             # 保存到数据库
             added_count = 0
+            updated_count = 0
             
             for data in basic_data:
                 trade_date_str = data.get('trade_date')
@@ -373,16 +401,11 @@ class StockDataService:
                     trade_date=trade_date
                 ).first()
                 
-                if not existing:
-                    # 数据清洗：将NaN值转换为None
-                    def clean_value(value):
-                        import math
-                        if value is None:
-                            return None
-                        if isinstance(value, (int, float)) and math.isnan(value):
-                            return None
-                        return value
-                    
+                if existing:
+                    for field in StockDataService.DAILY_BASIC_FIELDS:
+                        setattr(existing, field, clean_value(data.get(field)))
+                    updated_count += 1
+                else:
                     basic = StockDailyBasic(
                         ts_code=ts_code,
                         trade_date=trade_date,
@@ -407,12 +430,13 @@ class StockDataService:
                     added_count += 1
             
             db.session.commit()
-            logger.info(f"同步{ts_code}每日指标完成: 新增{added_count}条")
+            logger.info(f"同步{ts_code}每日指标完成: 新增{added_count}条, 更新{updated_count}条")
             
             return {
                 'success': True,
                 'message': '同步成功',
                 'added': added_count,
+                'updated': updated_count,
                 'source': 'tushare'
             }
         

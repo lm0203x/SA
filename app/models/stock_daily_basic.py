@@ -23,28 +23,32 @@ class StockDailyBasic(db.Model):
     free_share = Column(DECIMAL(20, 2), comment='自由流通股本（万）')
     total_mv = Column(DECIMAL(20, 2), comment='总市值（万元）')
     circ_mv = Column(DECIMAL(20, 2), comment='流通市值（万元）')
+
+    @staticmethod
+    def _to_float_or_none(value):
+        return float(value) if value is not None else None
     
     def to_dict(self):
         """转换为字典"""
         return {
             'ts_code': self.ts_code,
             'trade_date': self.trade_date.isoformat() if self.trade_date else None,
-            'close': float(self.close) if self.close else None,
-            'turnover_rate': float(self.turnover_rate) if self.turnover_rate else None,
-            'turnover_rate_f': float(self.turnover_rate_f) if self.turnover_rate_f else None,
-            'volume_ratio': float(self.volume_ratio) if self.volume_ratio else None,
-            'pe': float(self.pe) if self.pe else None,
-            'pe_ttm': float(self.pe_ttm) if self.pe_ttm else None,
-            'pb': float(self.pb) if self.pb else None,
-            'ps': float(self.ps) if self.ps else None,
-            'ps_ttm': float(self.ps_ttm) if self.ps_ttm else None,
-            'dv_ratio': float(self.dv_ratio) if self.dv_ratio else None,
-            'dv_ttm': float(self.dv_ttm) if self.dv_ttm else None,
-            'total_share': float(self.total_share) if self.total_share else None,
-            'float_share': float(self.float_share) if self.float_share else None,
-            'free_share': float(self.free_share) if self.free_share else None,
-            'total_mv': float(self.total_mv) if self.total_mv else None,
-            'circ_mv': float(self.circ_mv) if self.circ_mv else None
+            'close': self._to_float_or_none(self.close),
+            'turnover_rate': self._to_float_or_none(self.turnover_rate),
+            'turnover_rate_f': self._to_float_or_none(self.turnover_rate_f),
+            'volume_ratio': self._to_float_or_none(self.volume_ratio),
+            'pe': self._to_float_or_none(self.pe),
+            'pe_ttm': self._to_float_or_none(self.pe_ttm),
+            'pb': self._to_float_or_none(self.pb),
+            'ps': self._to_float_or_none(self.ps),
+            'ps_ttm': self._to_float_or_none(self.ps_ttm),
+            'dv_ratio': self._to_float_or_none(self.dv_ratio),
+            'dv_ttm': self._to_float_or_none(self.dv_ttm),
+            'total_share': self._to_float_or_none(self.total_share),
+            'float_share': self._to_float_or_none(self.float_share),
+            'free_share': self._to_float_or_none(self.free_share),
+            'total_mv': self._to_float_or_none(self.total_mv),
+            'circ_mv': self._to_float_or_none(self.circ_mv)
         }
     
     def __repr__(self):
