@@ -311,7 +311,9 @@ def get_analysis_stock_history_legacy(ts_code):
 def get_analysis_stock_history(ts_code):
     """获取单只股票的分析历史"""
     try:
-        limit = min(request.args.get('limit', 20, type=int), 100)
+        strategy_id = request.args.get('strategy_id', type=int)
+        page = request.args.get('page', 1, type=int)
+        per_page = min(request.args.get('per_page', 20, type=int), 100)
         stock_info = StockBasic.query.filter_by(ts_code=ts_code).first()
 
         query = db.session.query(AnalysisResult, AnalysisTask, AnalysisStrategy).join(
@@ -320,13 +322,18 @@ def get_analysis_stock_history(ts_code):
             AnalysisStrategy, AnalysisTask.strategy_id == AnalysisStrategy.id
         ).filter(
             AnalysisResult.ts_code == ts_code
-        ).order_by(
+        )
+
+        if strategy_id:
+            query = query.filter(AnalysisTask.strategy_id == strategy_id)
+
+        pagination = query.order_by(
             AnalysisTask.task_date.desc(),
             AnalysisResult.id.desc()
-        ).limit(limit)
+        ).paginate(page=page, per_page=per_page, error_out=False)
 
         history = []
-        for result, task, strategy in query.all():
+        for result, task, strategy in pagination.items:
             history.append({
                 'result_id': result.id,
                 'task_id': task.id,
@@ -350,7 +357,14 @@ def get_analysis_stock_history(ts_code):
                 'ts_code': ts_code,
                 'stock_name': stock_info.name if stock_info else None,
                 'records': history,
-                'total_count': len(history),
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': pagination.total,
+                    'pages': pagination.pages,
+                    'has_next': pagination.has_next,
+                    'has_prev': pagination.has_prev
+                },
             },
             'message': f'获取到 {len(history)} 条股票分析历史'
         })
