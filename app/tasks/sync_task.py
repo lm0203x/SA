@@ -41,7 +41,7 @@ def start_sync_task(task_id: str, start_date: str = None, end_date: str = None):
                 # 使用 greenlet 并行同步，每个股票一个协程
                 greenlets = []
                 for item in watchlist_items:
-                    greenlet = pool.spawn(_sync_single_stock, item, start_date, end_date)
+                    greenlet = pool.spawn(_sync_single_stock_with_context, app, item, start_date, end_date)
                     greenlets.append(greenlet)
 
                 # 等待所有任务完成
@@ -90,6 +90,12 @@ def start_sync_task(task_id: str, start_date: str = None, end_date: str = None):
 
     # 启动后台任务
     socketio.start_background_task(_sync_all_task)
+
+
+def _sync_single_stock_with_context(app, item, start_date, end_date):
+    """带应用上下文的同步单个股票数据"""
+    with app.app_context():
+        return _sync_single_stock(item, start_date, end_date)
 
 
 def _sync_single_stock(item, start_date, end_date):

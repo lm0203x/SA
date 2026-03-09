@@ -139,7 +139,7 @@ pip install -r requirements_minimal.txt
 
 #### 🗄️ 第二步：初始化数据库
 ```bash
-python init_datasource_db.py
+python Init/init_datasource_db.py
 ```
 
 **这个脚本会**：

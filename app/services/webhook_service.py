@@ -10,12 +10,12 @@ import hmac
 import requests
 import smtplib
 try:
-    from email.mime.text import MimeText
-    from email.mime.multipart import MimeMultipart
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
     from email.header import Header
 except ImportError:
-    MimeText = None
-    MimeMultipart = None
+    MIMEText = None
+    MIMEMultipart = None
     Header = None
 from datetime import datetime
 from loguru import logger
@@ -56,7 +56,7 @@ class WebhookService:
             elif webhook_config.webhook_type == 'feishu':
                 return self._send_feishu(webhook_config, formatted_message)
             elif webhook_config.webhook_type == 'email':
-                if MimeText is None:
+                if MIMEText is None:
                     return self._create_error_result("邮件功能需要email模块支持")
                 return self._send_email(webhook_config, formatted_message, alert_data)
             elif webhook_config.webhook_type == 'webhook':
@@ -175,17 +175,17 @@ class WebhookService:
                 return self._create_error_result("邮件配置不完整，缺少必要参数")
 
             # 创建邮件
-            msg = MimeMultipart('alternative')
+            msg = MIMEMultipart('alternative')
             msg['Subject'] = Header(message_data['subject'], 'utf-8')
             msg['From'] = f"{from_name} <{email}>"
             msg['To'] = ', '.join(to_emails)
 
             # 添加HTML内容
-            html_part = MimeText(message_data['html_content'], 'html', 'utf-8')
+            html_part = MIMEText(message_data['html_content'], 'html', 'utf-8')
             msg.attach(html_part)
 
             # 添加纯文本内容
-            text_part = MimeText(message_data['text_content'], 'plain', 'utf-8')
+            text_part = MIMEText(message_data['text_content'], 'plain', 'utf-8')
             msg.attach(text_part)
 
             # 发送邮件
@@ -341,7 +341,10 @@ class WebhookService:
                         logger.info(f"Webhook消息重试成功: {webhook_config.webhook_name} (第{attempt + 1}次尝试)")
                     return result
                 else:
-                    logger.warning(f"Webhook消息发送失败: {webhook_config.webhook_name} - {result.get('error_message', '未知错误')}")
+                    logger.warning(
+                        f"Webhook消息发送失败: {webhook_config.webhook_name} - "
+                        f"{result.get('error_message', '未知错误')}"
+                    )
 
                 if attempt < max_retries - 1:
                     time.sleep(retry_interval)
@@ -452,7 +455,7 @@ class WebhookService:
                 try:
                     logger.info(f"发送预警到Webhook: {webhook_config.webhook_name}")
 
-                    result = self.send_with_retry(
+                    result = self._send_with_retry(
                         self.send_message,
                         webhook_config,
                         alert_data
