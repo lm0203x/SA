@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { TrendingUp, TrendingDown, AlertTriangle, Activity, Plus, Settings, Database, Brain, Webhook, BarChart3, UserPlus } from 'lucide-react';
 import DataSourceConfig from '@/components/DataSourceConfig';
 import WatchlistManager from '@/components/WatchlistManager';
-import AlertManagement from '@/components/AlertManagement';
-import AlertRecords from '@/components/AlertRecords';
+import AnalysisRecords from '@/components/AnalysisRecords';
 import AIRecommendation from '@/components/AIRecommendation';
+import AnalysisRules from '@/components/AnalysisRules';
 
 
 import { useNavigate } from 'react-router-dom';
@@ -159,7 +159,7 @@ const StockDashboard = () => {
 
           {/* 预警规则页面 */}
           <TabsContent value="rules" className="space-y-6">
-            <AlertManagement />
+            <AnalysisRules />
           </TabsContent>
 
           {/* 数据源配置页面 */}
@@ -169,7 +169,7 @@ const StockDashboard = () => {
 
           {/* 预警记录页面 */}
           <TabsContent value="alerts" className="space-y-6">
-            <AlertRecords />
+            <AnalysisRecords />
           </TabsContent>
 
 
