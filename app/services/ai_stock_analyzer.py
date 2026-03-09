@@ -76,6 +76,7 @@ class AIStockAnalyzer:
 
             # 解析结果
             result = self._parse_response(response_text)
+            result = self._apply_news_confidence_adjustment(result, news_analysis)
 
             # 补充数据
             result.update({
@@ -95,6 +96,7 @@ class AIStockAnalyzer:
         except Exception as e:
             logger.error(f"AI分析失败: {e}")
             result = self._get_default_result(ts_code, stock_name, f"分析失败: {str(e)}")
+            result = self._apply_news_confidence_adjustment(result, news_analysis)
             result.update({
                 'news_sentiment': news_analysis['sentiment'],
                 'news_impact_score': news_analysis['impact_score'],
@@ -618,6 +620,20 @@ class AIStockAnalyzer:
 
     def _count_keyword_hits(self, text, keywords):
         return sum(1 for keyword in keywords if keyword and keyword in (text or ''))
+
+    def _apply_news_confidence_adjustment(self, result, news_analysis):
+        confidence = float(result.get('confidence', 0.0) or 0.0)
+        impact_score = float(news_analysis.get('impact_score', 0) or 0.0)
+        normalized_impact = min(1.0, impact_score / 100.0)
+        sentiment = news_analysis.get('sentiment', 'neutral')
+
+        if sentiment == 'positive':
+            confidence += 0.1 * normalized_impact
+        elif sentiment == 'negative':
+            confidence -= 0.1 * normalized_impact
+
+        result['confidence'] = max(0.0, min(1.0, round(confidence, 4)))
+        return result
 
     def _parse_response(self, response_text):
         """解析AI响应"""

@@ -43,6 +43,7 @@ class AIStockAnalyzerNewsTestCase(unittest.TestCase):
         self.assertGreater(result["news_impact_score"], 0)
         self.assertEqual(len(result["news_highlights"]), 2)
         self.assertTrue(result["news_risk_note"])
+        self.assertGreater(result["confidence"], 0.8)
 
     def test_analyze_stock_adds_default_news_summary_when_missing(self):
         analyzer = self._build_analyzer()
@@ -77,6 +78,22 @@ class AIStockAnalyzerNewsTestCase(unittest.TestCase):
         self.assertEqual(result["news_sentiment"], "positive")
         self.assertGreater(result["news_impact_score"], 0)
         self.assertEqual(len(result["news_highlights"]), 2)
+
+    def test_negative_news_reduces_confidence(self):
+        analyzer = self._build_analyzer()
+        stock_data = {
+            "is_watchlist": True,
+            "current_price": 12.5,
+            "news_list": [
+                {"title": "公司被处罚并遭调查，业绩下滑", "source": "测试源"},
+                {"title": "重要股东减持，诉讼风险上升", "source": "测试源"},
+            ],
+        }
+
+        result = analyzer.analyze_stock("000001.SZ", "平安银行", stock_data)
+
+        self.assertEqual(result["news_sentiment"], "negative")
+        self.assertLess(result["confidence"], 0.8)
 
 
 if __name__ == "__main__":
