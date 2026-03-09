@@ -254,6 +254,85 @@ create index idx_risk_alerts_ts_code_type
 create index idx_risk_alerts_updated_at
     on risk_alerts (updated_at);
 
+create table analysis_strategies
+(
+    id              int auto_increment
+        primary key,
+    name            varchar(100)                         not null comment '策略名称',
+    code            varchar(50)                          not null comment '策略编码',
+    strategy_type   varchar(50)                          not null comment '策略类型',
+    description     text                                 null comment '策略描述',
+    conditions_json text                                 null comment '策略条件JSON',
+    prompt_template text                                 null comment 'AI提示模板',
+    is_active       tinyint(1) default 1                 null comment '是否启用',
+    schedule_type   varchar(30) default 'manual'         null comment '调度类型',
+    created_at      datetime    default CURRENT_TIMESTAMP null comment '创建时间',
+    updated_at      datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_analysis_strategies_code
+        unique (code)
+);
+
+create index idx_analysis_strategies_active
+    on analysis_strategies (is_active);
+
+create index idx_analysis_strategies_type
+    on analysis_strategies (strategy_type);
+
+create table analysis_tasks
+(
+    id               int auto_increment
+        primary key,
+    strategy_id      int                                  not null comment '策略ID',
+    task_date        date                                 not null comment '任务日期',
+    status           varchar(20) default 'pending'        null comment '任务状态',
+    started_at       datetime                             null comment '开始时间',
+    finished_at      datetime                             null comment '结束时间',
+    stock_scope_type varchar(30) default 'watchlist'      null comment '股票范围类型',
+    stock_scope_json text                                 null comment '股票范围JSON',
+    summary_json     text                                 null comment '汇总结果JSON',
+    error_message    text                                 null comment '错误信息',
+    created_at       datetime    default CURRENT_TIMESTAMP null comment '创建时间',
+    updated_at       datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint fk_analysis_tasks_strategy
+        foreign key (strategy_id) references analysis_strategies (id)
+);
+
+create index idx_analysis_tasks_strategy
+    on analysis_tasks (strategy_id);
+
+create index idx_analysis_tasks_date
+    on analysis_tasks (task_date);
+
+create index idx_analysis_tasks_status
+    on analysis_tasks (status);
+
+create table analysis_results
+(
+    id           int auto_increment
+        primary key,
+    task_id      int                                  not null comment '任务ID',
+    ts_code      varchar(20)                          not null comment '股票代码',
+    stock_name   varchar(100)                         null comment '股票名称',
+    score        float        default 0               null comment '评分',
+    signal       varchar(20)                          not null comment '分析信号',
+    risk_level   varchar(20)  default 'medium'        null comment '风险等级',
+    reason_json  text                                 null comment '原因JSON',
+    metrics_json text                                 null comment '指标JSON',
+    ai_summary   text                                 null comment 'AI总结',
+    created_at   datetime     default CURRENT_TIMESTAMP null comment '创建时间',
+    constraint fk_analysis_results_task
+        foreign key (task_id) references analysis_tasks (id)
+);
+
+create index idx_analysis_results_task
+    on analysis_results (task_id);
+
+create index idx_analysis_results_ts_code
+    on analysis_results (ts_code);
+
+create index idx_analysis_results_signal
+    on analysis_results (signal);
+
 create index idx_username
     on users (username);
 
