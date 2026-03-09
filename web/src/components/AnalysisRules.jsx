@@ -11,9 +11,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const strategyTypes = [
-  { id: 'value', name: '估值修复', description: '结合估值、安全边际和资金流的日线分析策略。' },
-  { id: 'trend', name: '趋势观察', description: '更关注涨跌幅、换手和量能结构的观察型策略。' },
-  { id: 'fund_flow', name: '资金流改善', description: '更关注最新资金净流入和结构信号。' },
+  {
+    id: 'value',
+    name: '价值策略',
+    description: '偏重估值安全边际，适合做收盘后低估值观察。',
+    suggestedName: '低估值观察',
+    suggestedCode: 'value_watch',
+    suggestedDescription: '聚焦低市净率和合理市盈率的股票，结合价格稳定性与资金流做收盘后观察。',
+  },
+  {
+    id: 'trend',
+    name: '趋势策略',
+    description: '偏重涨跌幅、量比和换手率，适合观察趋势延续信号。',
+    suggestedName: '趋势延续观察',
+    suggestedCode: 'trend_watch',
+    suggestedDescription: '聚焦近期价格强弱、量比放大和活跃换手，寻找趋势有望延续的股票。',
+  },
+  {
+    id: 'fund_flow',
+    name: '资金流策略',
+    description: '偏重资金净流入和量能配合，适合观察资金驱动型机会。',
+    suggestedName: '资金流改善观察',
+    suggestedCode: 'fund_flow_watch',
+    suggestedDescription: '聚焦最新资金净流入、量比和价格强弱，观察资金驱动更明显的股票。',
+  },
 ];
 
 const emptyStrategy = {
@@ -149,6 +170,34 @@ export default function AnalysisRules() {
 
   const currentType = strategyTypes.find((item) => item.id === newStrategy.strategy_type);
 
+  function handleStrategyTypeChange(value) {
+    const selectedType = strategyTypes.find((item) => item.id === value);
+    if (!selectedType) {
+      return;
+    }
+
+    setNewStrategy((prev) => ({
+      ...prev,
+      strategy_type: value,
+      name: prev.name ? prev.name : selectedType.suggestedName,
+      code: prev.code ? prev.code : selectedType.suggestedCode,
+      description: prev.description ? prev.description : selectedType.suggestedDescription,
+    }));
+  }
+
+  function applyStrategyTemplate() {
+    if (!currentType) {
+      return;
+    }
+
+    setNewStrategy((prev) => ({
+      ...prev,
+      name: currentType.suggestedName,
+      code: currentType.suggestedCode,
+      description: currentType.suggestedDescription,
+    }));
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -185,6 +234,27 @@ export default function AnalysisRules() {
               <CardDescription>先以自选股为扫描范围，后续再逐步扩展更复杂的分析条件。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {strategyTypes.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`rounded-lg border p-4 text-left transition ${
+                      newStrategy.strategy_type === item.id
+                        ? 'border-slate-900 bg-slate-50'
+                        : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                    onClick={() => handleStrategyTypeChange(item.id)}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-slate-900">{item.name}</span>
+                      {newStrategy.strategy_type === item.id && <Badge>当前选择</Badge>}
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{item.description}</p>
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="strategy-name">策略名称</Label>
@@ -208,7 +278,7 @@ export default function AnalysisRules() {
                   <Label htmlFor="strategy-type">策略类型</Label>
                   <Select
                     value={newStrategy.strategy_type}
-                    onValueChange={(value) => setNewStrategy((prev) => ({ ...prev, strategy_type: value }))}
+                    onValueChange={handleStrategyTypeChange}
                   >
                     <SelectTrigger id="strategy-type">
                       <SelectValue />
@@ -252,9 +322,20 @@ export default function AnalysisRules() {
 
               <Card className="border-dashed">
                 <CardHeader>
-                  <CardTitle className="text-lg">当前类型说明</CardTitle>
-                  <CardDescription>{currentType?.description}</CardDescription>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-lg">当前类型说明</CardTitle>
+                      <CardDescription>{currentType?.description}</CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" onClick={applyStrategyTemplate}>
+                      使用推荐模板
+                    </Button>
+                  </div>
                 </CardHeader>
+                <CardContent className="space-y-2 text-sm text-slate-600">
+                  <p>推荐名称: {currentType?.suggestedName}</p>
+                  <p>推荐编码: {currentType?.suggestedCode}</p>
+                </CardContent>
               </Card>
 
               <Button onClick={createStrategy} className="w-full" disabled={submitting}>

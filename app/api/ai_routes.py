@@ -389,6 +389,102 @@ def _to_float(value, default=0.0):
         return default
 
 
+def _build_scored_result(score, reasons):
+    if score >= 70:
+        signal = 'buy'
+        risk_level = 'medium'
+    elif score >= 40:
+        signal = 'watch'
+        risk_level = 'medium'
+    else:
+        signal = 'avoid'
+        risk_level = 'high'
+
+    return {
+        'score': round(score, 2),
+        'signal': signal,
+        'risk_level': risk_level,
+        'reasons': reasons or ['当前未出现明显的结构化优势信号'],
+    }
+
+
+def _score_trend_metrics(metrics):
+    score = 0.0
+    reasons = []
+
+    if metrics['pct_chg'] >= 1:
+        score += 25
+        reasons.append('最近交易日涨幅较强')
+    if metrics['volume_ratio'] >= 1.2:
+        score += 25
+        reasons.append('量比放大，趋势延续有量能支持')
+    if 2 <= metrics['turnover_rate'] <= 8:
+        score += 20
+        reasons.append('换手率处于趋势策略偏好的活跃区间')
+    if metrics['net_mf_amount'] > 0:
+        score += 10
+        reasons.append('资金面没有明显拖累趋势')
+    if metrics['close'] > 0:
+        score += 5
+        reasons.append('存在有效收盘价数据')
+
+    return _build_scored_result(score, reasons)
+
+
+def _score_fund_flow_metrics(metrics):
+    score = 0.0
+    reasons = []
+
+    if metrics['net_mf_amount'] > 0:
+        score += 40
+        reasons.append('最新资金流为净流入')
+    if metrics['volume_ratio'] >= 1:
+        score += 20
+        reasons.append('量比不弱，资金驱动更容易延续')
+    if metrics['pct_chg'] >= 0:
+        score += 15
+        reasons.append('价格未走弱，资金流信号更可信')
+    if 1 <= metrics['turnover_rate'] <= 12:
+        score += 15
+        reasons.append('换手率匹配资金流策略的活跃要求')
+    if metrics['close'] > 0:
+        score += 10
+        reasons.append('存在有效收盘价数据')
+
+    return _build_scored_result(score, reasons)
+
+
+def _score_value_metrics(metrics):
+    score = 0.0
+    reasons = []
+
+    if 0 < metrics['pb'] < 1:
+        score += 40
+        reasons.append('市净率低于1，估值具备安全边际')
+    if 0 < metrics['pe'] < 15:
+        score += 30
+        reasons.append('市盈率处于价值策略偏好的区间')
+    if metrics['pct_chg'] > -3:
+        score += 10
+        reasons.append('短期价格未出现明显破位')
+    if metrics['net_mf_amount'] > 0:
+        score += 10
+        reasons.append('资金流未明显恶化')
+    if metrics['close'] > 0:
+        score += 10
+        reasons.append('存在有效收盘价数据')
+
+    return _build_scored_result(score, reasons)
+
+
+def _score_metrics_by_strategy_type(metrics, strategy_type):
+    if strategy_type == 'fund_flow':
+        return _score_fund_flow_metrics(metrics)
+    if strategy_type == 'value':
+        return _score_value_metrics(metrics)
+    return _score_trend_metrics(metrics)
+
+
 def _resolve_analysis_scope(scope_type, scope_config):
     if scope_type == 'watchlist':
         items = Watchlist.query.order_by(Watchlist.added_at.desc()).all()
@@ -405,7 +501,7 @@ def _resolve_analysis_scope(scope_type, scope_config):
     return []
 
 
-def _build_analysis_result(ts_code, stock_name):
+def _build_analysis_result(ts_code, stock_name, strategy_type='trend'):
     resolved_name = stock_name
     if not resolved_name:
         stock_info = StockBasic.query.filter_by(ts_code=ts_code).first()
@@ -431,45 +527,15 @@ def _build_analysis_result(ts_code, stock_name):
         'net_mf_amount': _to_float(latest_moneyflow.net_mf_amount) if latest_moneyflow else 0.0,
     }
 
-    score = 0.0
-    reasons = []
-
-    if metrics['pct_chg'] > 0:
-        score += 20
-        reasons.append('最新交易日收涨')
-    if metrics['volume_ratio'] >= 1:
-        score += 20
-        reasons.append('量比大于等于1，量能未明显走弱')
-    if 1 <= metrics['turnover_rate'] <= 8:
-        score += 15
-        reasons.append('换手率处于相对可接受区间')
-    if 0 < metrics['pb'] < 1:
-        score += 20
-        reasons.append('市净率低于1，估值具备一定安全边际')
-    if metrics['net_mf_amount'] > 0:
-        score += 25
-        reasons.append('最新资金流为净流入')
-
-    if score >= 70:
-        signal = 'buy'
-        risk_level = 'medium'
-    elif score >= 40:
-        signal = 'watch'
-        risk_level = 'medium'
-    else:
-        signal = 'avoid'
-        risk_level = 'high'
-
-    if not reasons:
-        reasons.append('当前未出现明显的结构化优势信号')
+    scored_result = _score_metrics_by_strategy_type(metrics, strategy_type)
 
     return {
         'ts_code': ts_code,
         'stock_name': resolved_name,
-        'score': round(score, 2),
-        'signal': signal,
-        'risk_level': risk_level,
-        'reasons': reasons,
+        'score': scored_result['score'],
+        'signal': scored_result['signal'],
+        'risk_level': scored_result['risk_level'],
+        'reasons': scored_result['reasons'],
         'metrics': metrics,
     }
 
@@ -553,7 +619,7 @@ def run_analysis_strategy(strategy_id):
 
         created_results = []
         for ts_code, stock_name in stocks:
-            result_data = _build_analysis_result(ts_code, stock_name)
+            result_data = _build_analysis_result(ts_code, stock_name, strategy.strategy_type)
             db.session.add(AnalysisResult(
                 task_id=task.id,
                 ts_code=result_data['ts_code'],
