@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { apiRequest } from '@/services/api';
 
 function getSignalClass(signal) {
   if (signal === 'buy') return 'bg-green-100 text-green-800';
@@ -68,12 +69,7 @@ export default function AnalysisRecords() {
 
   async function loadStrategies() {
     try {
-      const response = await fetch('/api/analysis/strategies');
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '加载分析策略失败');
-      }
+      const payload = await apiRequest('/analysis/strategies');
 
       setStrategies(payload.data || []);
     } catch (loadError) {
@@ -98,12 +94,7 @@ export default function AnalysisRecords() {
         params.set('status', taskFilters.status);
       }
 
-      const response = await fetch(`/api/analysis/tasks?${params.toString()}`);
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '加载分析记录失败');
-      }
+      const payload = await apiRequest(`/analysis/tasks?${params.toString()}`);
 
       const nextTasks = payload.data?.tasks || [];
       const nextPagination = payload.data?.pagination || DEFAULT_TASK_PAGINATION;
@@ -132,12 +123,7 @@ export default function AnalysisRecords() {
       setError('');
     }
     try {
-      const response = await fetch(`/api/analysis/tasks/${taskId}`);
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '加载分析记录详情失败');
-      }
+      const payload = await apiRequest(`/analysis/tasks/${taskId}`);
 
       setSelectedTask(payload.data);
     } catch (detailError) {
@@ -165,12 +151,7 @@ export default function AnalysisRecords() {
         params.set('strategy_id', stockStrategyId);
       }
 
-      const response = await fetch(`/api/analysis/stocks/${nextStockCode}/history?${params.toString()}`);
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '加载股票分析历史失败');
-      }
+      const payload = await apiRequest(`/analysis/stocks/${nextStockCode}/history?${params.toString()}`);
 
       setSubmittedStockCode(nextStockCode);
       setStockHistory(payload.data?.records || []);

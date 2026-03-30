@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { apiRequest } from '@/services/api';
 
 const strategyTypes = [
   {
@@ -64,21 +65,12 @@ export default function AnalysisRules() {
     setError('');
     try {
       const [strategyRes, taskRes] = await Promise.all([
-        fetch('/api/analysis/strategies'),
-        fetch('/api/analysis/tasks'),
+        apiRequest('/analysis/strategies'),
+        apiRequest('/analysis/tasks'),
       ]);
-      const strategyPayload = await strategyRes.json();
-      const taskPayload = await taskRes.json();
 
-      if (!strategyRes.ok) {
-        throw new Error(strategyPayload.message || '加载分析策略失败');
-      }
-      if (!taskRes.ok) {
-        throw new Error(taskPayload.message || '加载分析任务失败');
-      }
-
-      setStrategies(strategyPayload.data || []);
-      setTasks(taskPayload.data?.tasks || []);
+      setStrategies(strategyRes.data || []);
+      setTasks(taskRes.data?.tasks || []);
     } catch (loadError) {
       console.error('Failed to load analysis data:', loadError);
       setError(loadError.message || '加载分析数据失败');
@@ -96,19 +88,13 @@ export default function AnalysisRules() {
     setSubmitting(true);
     setError('');
     try {
-      const response = await fetch('/api/analysis/strategies', {
+      const payload = await apiRequest('/analysis/strategies', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newStrategy,
           conditions: { stock_scope_type: 'watchlist' },
         }),
       });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '创建分析策略失败');
-      }
 
       setStrategies((prev) => [payload.data, ...prev]);
       setNewStrategy(emptyStrategy);
@@ -124,16 +110,10 @@ export default function AnalysisRules() {
     setRunningId(strategyId);
     setError('');
     try {
-      const response = await fetch(`/api/analysis/strategies/${strategyId}/run`, {
+      const payload = await apiRequest(`/analysis/strategies/${strategyId}/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '执行分析策略失败');
-      }
 
       setSelectedTask(payload.data);
       await loadData();
@@ -148,12 +128,7 @@ export default function AnalysisRules() {
   async function loadTaskDetail(taskId) {
     setError('');
     try {
-      const response = await fetch(`/api/analysis/tasks/${taskId}`);
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || '加载任务详情失败');
-      }
+      const payload = await apiRequest(`/analysis/tasks/${taskId}`);
 
       setSelectedTask(payload.data);
     } catch (detailError) {

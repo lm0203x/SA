@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Brain, Settings, TrendingUp, TrendingDown, Minus, Loader2, AlertCircle } from 'lucide-react';
 import AIConfigDialog from '@/components/AIConfigDialog';
+import { apiRequest } from '@/services/api';
 
 export default function AIRecommendation() {
     const [selectedStock, setSelectedStock] = useState('');
@@ -26,8 +27,7 @@ export default function AIRecommendation() {
 
     const fetchWatchlist = async () => {
         try {
-            const response = await fetch('/api/watchlist');
-            const data = await response.json();
+            const data = await apiRequest('/watchlist');
             if (data.success) {
                 setWatchlist(data.data || []);
             }
@@ -73,8 +73,7 @@ export default function AIRecommendation() {
 
     const checkAIConfig = async () => {
         try {
-            const response = await fetch('/api/ai/config');
-            const data = await response.json();
+            const data = await apiRequest('/ai/config');
             if (data.success) {
                 setAiConfigured(data.data.is_configured);
             }
@@ -100,17 +99,12 @@ export default function AIRecommendation() {
             setAnalyzing(true);
             setMessage({ type: '', text: '' });
 
-            const response = await fetch('/api/ai/stock-recommendation', {
+            const data = await apiRequest('/ai/stock-recommendation', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({
                     ts_code: selectedStock
                 })
             });
-
-            const data = await response.json();
 
             if (data.success) {
                 setRecommendation(data.data);
