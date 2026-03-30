@@ -7,6 +7,8 @@ from flask import request, jsonify
 from loguru import logger
 from app.api import api_bp
 from app.services.stock_data_service import StockDataService
+from app.services.operation_log_service import OperationLogService
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/stocks', methods=['GET'])
@@ -40,6 +42,15 @@ def sync_stocks():
     try:
         force_update = request.get_json().get('force_update', False) if request.is_json else False
         result = StockDataService.sync_stock_list(force_update=force_update)
+        OperationLogService.record(
+            module='datasource',
+            action_type='sync',
+            action_name='同步股票列表',
+            status='success' if result.get('success') else 'failed',
+            user=get_request_user(),
+            message=result.get('message'),
+            detail={'force_update': force_update},
+        )
         return jsonify(result)
     
     except Exception as e:

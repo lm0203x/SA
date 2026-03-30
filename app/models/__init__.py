@@ -12,6 +12,7 @@ from .risk_alert import RiskAlert
 from .user import User
 from .watchlist import Watchlist
 from .data_source_config import DataSourceConfig
+from .operation_log import OperationLog
 
 # 可选的高级模型（如果需要可以启用）
 from .stock_factor import StockFactor
@@ -39,5 +40,6 @@ __all__ = [
     # 用户功能模型
     'User',
     'Watchlist',
-    'DataSourceConfig'
+    'DataSourceConfig',
+    'OperationLog'
 ] 

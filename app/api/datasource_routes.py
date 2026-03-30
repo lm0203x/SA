@@ -8,7 +8,9 @@ from loguru import logger
 from app.api import api_bp
 from app.extensions import db
 from app.models.data_source_config import DataSourceConfig
+from app.services.operation_log_service import OperationLogService
 from app.services.tushare_service import TushareService
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/datasources', methods=['GET'])
@@ -16,6 +18,13 @@ def get_datasources():
     """获取所有数据源配置"""
     try:
         configs = DataSourceConfig.query.all()
+        OperationLogService.record(
+            module='datasource',
+            action_type='view',
+            action_name='查看数据源配置',
+            user=get_request_user(),
+            message=f'共返回 {len(configs)} 条数据源配置',
+        )
         return jsonify({
             'success': True,
             'data': [config.to_dict() for config in configs]
@@ -58,6 +67,17 @@ def create_datasource():
         db.session.commit()
         
         logger.info(f"创建数据源配置成功: {config.source_name}")
+        OperationLogService.record(
+            module='datasource',
+            action_type='create',
+            action_name='创建数据源配置',
+            user=get_request_user(),
+            target_type='datasource',
+            target_id=config.id,
+            target_name=config.source_name,
+            message='创建成功',
+            detail={'source_type': config.source_type},
+        )
         return jsonify({
             'success': True,
             'message': '创建成功',
@@ -100,6 +120,17 @@ def update_datasource(config_id):
         db.session.commit()
         
         logger.info(f"更新数据源配置成功: {config.source_name}")
+        OperationLogService.record(
+            module='datasource',
+            action_type='update',
+            action_name='更新数据源配置',
+            user=get_request_user(),
+            target_type='datasource',
+            target_id=config.id,
+            target_name=config.source_name,
+            message='更新成功',
+            detail={'source_type': config.source_type},
+        )
         return jsonify({
             'success': True,
             'message': '更新成功',
@@ -124,6 +155,16 @@ def delete_datasource(config_id):
         db.session.commit()
         
         logger.info(f"删除数据源配置成功: {config.source_name}")
+        OperationLogService.record(
+            module='datasource',
+            action_type='delete',
+            action_name='删除数据源配置',
+            user=get_request_user(),
+            target_type='datasource',
+            target_id=config_id,
+            target_name=config.source_name,
+            message='删除成功',
+        )
         return jsonify({'success': True, 'message': '删除成功'})
     
     except Exception as e:
@@ -170,6 +211,17 @@ def test_datasource(config_id):
         config.last_test_time = datetime.now()
         config.error_message = result.get('message') if not result.get('success') else None
         db.session.commit()
+        OperationLogService.record(
+            module='datasource',
+            action_type='test',
+            action_name='测试数据源连接',
+            status='success' if result.get('success') else 'failed',
+            user=get_request_user(),
+            target_type='datasource',
+            target_id=config.id,
+            target_name=config.source_name,
+            message=result.get('message'),
+        )
         
         return jsonify(result)
     

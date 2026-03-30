@@ -15,6 +15,8 @@ from app.services.tushare_service import TushareService
 from app.services.stock_data_service import StockDataService
 from app.services.alert_trigger_engine import alert_trigger_engine
 from app.models.data_source_config import DataSourceConfig
+from app.services.operation_log_service import OperationLogService
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/watchlist', methods=['GET'])
@@ -34,6 +36,13 @@ def get_watchlist():
             stock_data['latest_trade_date'] = latest_daily.trade_date.isoformat() if latest_daily and latest_daily.trade_date else None
             watchlist_data.append(stock_data)
 
+        OperationLogService.record(
+            module='watchlist',
+            action_type='view',
+            action_name='查看自选股',
+            user=get_request_user(),
+            message=f'共返回 {len(watchlist)} 只自选股',
+        )
         return jsonify({
             'success': True,
             'data': watchlist_data,
@@ -118,6 +127,16 @@ def add_to_watchlist():
         db.session.commit()
         
         logger.info(f"添加自选股成功: {ts_code}")
+        OperationLogService.record(
+            module='watchlist',
+            action_type='create',
+            action_name='添加自选股',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=watchlist_item.id,
+            target_name=watchlist_item.ts_code,
+            message='添加成功',
+        )
         
         return jsonify({
             'success': True,
@@ -148,6 +167,16 @@ def remove_from_watchlist(id):
         db.session.commit()
         
         logger.info(f"删除自选股成功: {ts_code}")
+        OperationLogService.record(
+            module='watchlist',
+            action_type='delete',
+            action_name='删除自选股',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=id,
+            target_name=ts_code,
+            message='删除成功',
+        )
         
         return jsonify({
             'success': True,
@@ -176,6 +205,16 @@ def update_watchlist(id):
         watchlist_item.note = data.get('note', watchlist_item.note)
         
         db.session.commit()
+        OperationLogService.record(
+            module='watchlist',
+            action_type='update',
+            action_name='更新自选股备注',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=watchlist_item.id,
+            target_name=watchlist_item.ts_code,
+            message='更新成功',
+        )
         
         return jsonify({
             'success': True,
@@ -215,6 +254,17 @@ def sync_watchlist_data(id):
             # 更新最后同步时间
             watchlist_item.last_sync = datetime.utcnow()
             db.session.commit()
+        OperationLogService.record(
+            module='watchlist',
+            action_type='sync',
+            action_name='同步单只自选股',
+            status='success' if result.get('success') else 'failed',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=watchlist_item.id,
+            target_name=ts_code,
+            message=result.get('message'),
+        )
         
         return jsonify(result)
     
@@ -245,6 +295,15 @@ def sync_all_watchlist():
         # 立即返回任务提交成功
         from app.tasks.sync_task import start_sync_task
         start_sync_task(task_id, start_date, end_date)
+        OperationLogService.record(
+            module='watchlist',
+            action_type='sync',
+            action_name='同步全部自选股',
+            user=get_request_user(),
+            target_type='task',
+            target_id=task_id,
+            message='同步任务已提交',
+        )
 
         return jsonify({
             'success': True,
@@ -293,6 +352,20 @@ def update_push_config(id):
                 watchlist_item.push_time = None
 
         db.session.commit()
+        OperationLogService.record(
+            module='watchlist',
+            action_type='update',
+            action_name='更新自选股推送配置',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=watchlist_item.id,
+            target_name=watchlist_item.ts_code,
+            message='推送配置更新成功',
+            detail={
+                'push_enabled': watchlist_item.push_enabled,
+                'push_time': watchlist_item.push_time.strftime('%H:%M') if watchlist_item.push_time else None,
+            },
+        )
 
         return jsonify({
             'success': True,

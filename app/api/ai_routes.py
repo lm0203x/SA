@@ -11,6 +11,7 @@ from app.api import api_bp
 from app.extensions import db
 from app.services.ai_stock_analyzer import get_ai_analyzer
 from app.services.news_service import NewsService
+from app.services.operation_log_service import OperationLogService
 from app.models.ai_analysis import AIAnalysisRecord
 from app.models.analysis import AnalysisStrategy, AnalysisTask, AnalysisResult
 from app.models.stock_basic import StockBasic
@@ -18,6 +19,7 @@ from app.models.stock_daily_history import StockDailyHistory
 from app.models.stock_daily_basic import StockDailyBasic
 from app.models.stock_moneyflow import StockMoneyflow
 from app.models.watchlist import Watchlist
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/ai/stock-recommendation', methods=['POST'])
@@ -117,6 +119,16 @@ def get_stock_recommendation():
             )
 
             logger.info(f"AI推荐生成成功: {ts_code} - {result['recommendation']}")
+            OperationLogService.record(
+                module='ai_analysis',
+                action_type='analyze',
+                action_name='AI股票分析',
+                user=get_request_user(),
+                target_type='stock',
+                target_id=ts_code,
+                target_name=stock_info.name,
+                message=f"分析完成: {result['recommendation']}",
+            )
 
             # 添加股票数据到响应中，供前端显示
             result['data_summary'] = {
@@ -201,6 +213,13 @@ def get_analysis_tasks():
             task_data['strategy_code'] = strategy.code if strategy else None
             tasks.append(task_data)
 
+        OperationLogService.record(
+            module='strategy',
+            action_type='view',
+            action_name='查看分析任务列表',
+            user=get_request_user(),
+            message=f'共返回 {len(tasks)} 条任务',
+        )
         return jsonify({
             'success': True,
             'data': {
@@ -242,6 +261,16 @@ def get_analysis_task_detail(task_id):
         task_data['strategy_name'] = strategy.name if strategy else None
         task_data['strategy_code'] = strategy.code if strategy else None
 
+        OperationLogService.record(
+            module='strategy',
+            action_type='view',
+            action_name='查看分析任务详情',
+            user=get_request_user(),
+            target_type='task',
+            target_id=task.id,
+            target_name=strategy.name if strategy else str(task.id),
+            message=f'查看任务 {task.id} 详情',
+        )
         return jsonify({
             'success': True,
             'data': {
@@ -351,6 +380,16 @@ def get_analysis_stock_history(ts_code):
                 'created_at': result.created_at.isoformat() if result.created_at else None,
             })
 
+        OperationLogService.record(
+            module='strategy',
+            action_type='view',
+            action_name='查看股票分析历史',
+            user=get_request_user(),
+            target_type='stock',
+            target_id=ts_code,
+            target_name=stock_info.name if stock_info else ts_code,
+            message=f'获取到 {len(history)} 条股票分析历史',
+        )
         return jsonify({
             'success': True,
             'data': {
@@ -579,6 +618,16 @@ def create_analysis_strategy():
         db.session.add(strategy)
         db.session.commit()
 
+        OperationLogService.record(
+            module='strategy',
+            action_type='create',
+            action_name='创建分析策略',
+            user=get_request_user(),
+            target_type='strategy',
+            target_id=strategy.id,
+            target_name=strategy.name,
+            message='分析策略创建成功',
+        )
         return jsonify({
             'success': True,
             'data': strategy.to_dict(),
@@ -643,6 +692,16 @@ def run_analysis_strategy(strategy_id):
         task.summary_json = json.dumps(summary, ensure_ascii=False)
         db.session.commit()
 
+        OperationLogService.record(
+            module='strategy',
+            action_type='analyze',
+            action_name='执行分析策略',
+            user=get_request_user(),
+            target_type='strategy',
+            target_id=strategy.id,
+            target_name=strategy.name,
+            message=f'分析策略执行完成，扫描 {len(created_results)} 只股票',
+        )
         return jsonify({
             'success': True,
             'data': {

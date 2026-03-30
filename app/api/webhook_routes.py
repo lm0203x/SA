@@ -10,6 +10,8 @@ from app.api import api_bp
 from app.extensions import db
 from app.models.webhook_config import WebhookConfig
 from app.services.webhook_service import webhook_service
+from app.services.operation_log_service import OperationLogService
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/webhook-configs', methods=['GET'])
@@ -17,6 +19,13 @@ def get_webhook_configs():
     """获取所有Webhook配置"""
     try:
         configs = WebhookConfig.query.all()
+        OperationLogService.record(
+            module='webhook',
+            action_type='view',
+            action_name='查看Webhook配置',
+            user=get_request_user(),
+            message=f'共返回 {len(configs)} 条Webhook配置',
+        )
         return jsonify({
             'success': True,
             'data': [config.to_dict(include_sensitive=False) for config in configs]
@@ -95,6 +104,17 @@ def create_webhook_config():
         db.session.commit()
 
         logger.info(f"创建Webhook配置成功: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='create',
+            action_name='创建Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message='创建成功',
+            detail={'webhook_type': config.webhook_type},
+        )
         return jsonify({
             'success': True,
             'message': '创建成功',
@@ -147,6 +167,17 @@ def update_webhook_config(config_id):
         db.session.commit()
 
         logger.info(f"更新Webhook配置成功: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='update',
+            action_name='更新Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message='更新成功',
+            detail={'webhook_type': config.webhook_type},
+        )
         return jsonify({
             'success': True,
             'message': '更新成功',
@@ -178,6 +209,16 @@ def delete_webhook_config(config_id):
         db.session.commit()
 
         logger.info(f"删除Webhook配置成功: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='delete',
+            action_name='删除Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config_id,
+            target_name=config.webhook_name,
+            message='删除成功',
+        )
         return jsonify({'success': True, 'message': '删除成功'})
 
     except Exception as e:
@@ -196,6 +237,17 @@ def test_webhook_config(config_id):
 
         # 测试连接
         result = config.test_connection()
+        OperationLogService.record(
+            module='webhook',
+            action_type='test',
+            action_name='测试Webhook配置',
+            status='success' if result.get('success') else 'failed',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message=result.get('message') or result.get('error_message'),
+        )
 
         logger.info(f"Webhook配置测试完成: {config.webhook_name}")
         return jsonify(result)
@@ -256,6 +308,16 @@ def set_default_webhook_config(config_id):
         config.set_as_default()
 
         logger.info(f"设置默认Webhook配置: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='update',
+            action_name='设置默认Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message='已设置为默认配置',
+        )
         return jsonify({
             'success': True,
             'message': f'已设置 {config.webhook_name} 为默认配置',
@@ -296,6 +358,16 @@ def enable_webhook_config(config_id):
         db.session.commit()
 
         logger.info(f"启用Webhook配置: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='update',
+            action_name='启用Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message='配置已启用',
+        )
         return jsonify({
             'success': True,
             'message': '配置已启用',
@@ -327,6 +399,16 @@ def disable_webhook_config(config_id):
         db.session.commit()
 
         logger.info(f"禁用Webhook配置: {config.webhook_name}")
+        OperationLogService.record(
+            module='webhook',
+            action_type='update',
+            action_name='禁用Webhook配置',
+            user=get_request_user(),
+            target_type='webhook',
+            target_id=config.id,
+            target_name=config.webhook_name,
+            message='配置已禁用',
+        )
         return jsonify({
             'success': True,
             'message': '配置已禁用',

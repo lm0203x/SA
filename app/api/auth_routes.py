@@ -6,7 +6,8 @@
 from flask import request, jsonify
 from app.api import api_bp
 from app.services.auth_service import AuthService
-from app.extensions import db
+from app.services.operation_log_service import OperationLogService
+from app.utils.auth import get_request_user
 
 
 @api_bp.route('/auth/register', methods=['POST'])
@@ -44,6 +45,16 @@ def register():
         return jsonify({'success': False, 'message': '密码至少6个字符'})
 
     result = AuthService.register(username, password)
+    OperationLogService.record(
+        module='auth',
+        action_type='register',
+        action_name='用户注册',
+        status='success' if result.get('success') else 'failed',
+        user=get_request_user(),
+        target_type='user',
+        target_name=username,
+        message=result.get('message') or ('注册成功' if result.get('success') else '注册失败'),
+    )
     return jsonify(result)
 
 
@@ -77,6 +88,17 @@ def login():
         return jsonify({'success': False, 'message': '请输入用户名和密码'})
 
     result = AuthService.login(username, password)
+    OperationLogService.record(
+        module='auth',
+        action_type='login',
+        action_name='用户登录',
+        status='success' if result.get('success') else 'failed',
+        user_id=result.get('user', {}).get('id') if result.get('success') else None,
+        username=username,
+        target_type='user',
+        target_name=username,
+        message=result.get('message') or ('登录成功' if result.get('success') else '登录失败'),
+    )
     return jsonify(result)
 
 
