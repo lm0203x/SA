@@ -29,18 +29,43 @@ class NewsService:
         return ts_code.split(".")[0].strip()
 
     @staticmethod
+    def _normalize_market_prefix(ts_code):
+        if not ts_code or "." not in ts_code:
+            return ""
+        market = ts_code.split(".")[-1].strip().upper()
+        if market == "SZ":
+            return "sz"
+        if market == "SH":
+            return "sh"
+        return ""
+
+    @staticmethod
     def _build_sina_search_url(ts_code):
-        query = (ts_code or "").strip()
-        if not query:
-            return "https://search.sina.com.cn/?range=all&c=news&sort=time"
-        return f"https://search.sina.com.cn/?q={query}&range=all&c=news&sort=time"
+        stock_code = NewsService._normalize_stock_code(ts_code)
+        market_prefix = NewsService._normalize_market_prefix(ts_code)
+        if not stock_code or not market_prefix:
+            return "https://vip.stock.finance.sina.com.cn/corp/go.php/vCB_AllNewsStock/"
+        return (
+            "https://vip.stock.finance.sina.com.cn/corp/go.php/"
+            f"vCB_AllNewsStock/symbol/{market_prefix}{stock_code}.phtml"
+        )
 
     @staticmethod
     def _build_eastmoney_news_url(ts_code):
         stock_code = NewsService._normalize_stock_code(ts_code)
-        if not stock_code or not re.fullmatch(r"\d{6}", stock_code):
+        market_prefix = NewsService._normalize_market_prefix(ts_code)
+        if not stock_code or not market_prefix or not re.fullmatch(r"\d{6}", stock_code):
             return "https://stock.eastmoney.com/"
-        return f"https://stock.eastmoney.com/a/{stock_code}.html"
+        return f"https://quote.eastmoney.com/{market_prefix}{stock_code}.html"
+
+    @staticmethod
+    def _extract_publish_date(href):
+        if not href:
+            return datetime.now().strftime("%Y-%m-%d %H:%M")
+        match = re.search(r"/(\d{4}-\d{2}-\d{2})/", href)
+        if match:
+            return match.group(1)
+        return datetime.now().strftime("%Y-%m-%d %H:%M")
 
     @staticmethod
     def get_stock_news(ts_code, stock_name, limit=3):
@@ -63,12 +88,11 @@ class NewsService:
     def _fetch_sina_news(ts_code, stock_name, limit):
         news_list = []
         clean_name = re.sub(r"[^\u4e00-\u9fa5]", "", stock_name or "")
-        stock_code = NewsService._normalize_stock_code(ts_code)
         url = NewsService._build_sina_search_url(ts_code)
 
         try:
             response = requests.get(url, headers=NewsService.HEADERS, timeout=10)
-            response.encoding = "utf-8"
+            response.encoding = "gbk"
             soup = BeautifulSoup(response.text, "html.parser")
 
             for item in soup.find_all("a", href=True):
@@ -76,21 +100,34 @@ class NewsService:
                 href = item.get("href", "")
                 if not title or len(title) <= 8 or "javascript:" in href:
                     continue
-                if not any(domain in href for domain in ("finance.sina.com.cn", "cj.sina.com.cn", "stock.finance.sina.com.cn")):
+                if not href.startswith("http"):
                     continue
-                if stock_code and stock_code not in title and clean_name and clean_name not in title:
+                if "finance.sina.com.cn" not in href:
+                    continue
+                if any(
+                    token in href for token in (
+                        "/realstock/company/",
+                        "vip.stock.finance.sina.com.cn",
+                        "/stock/index.shtml",
+                        "/stock/hkstock/index.shtml",
+                        "/stock/usstock/index.shtml",
+                        "/stock/newstock/index.shtml",
+                    )
+                ):
+                    continue
+                if clean_name and clean_name not in title:
                     continue
 
                 news_list.append({
                     "title": title,
                     "url": href,
                     "source": "新浪财经",
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "time": NewsService._extract_publish_date(href),
                 })
                 if len(news_list) >= limit:
                     break
         except Exception as exc:
-            logger.error(f"新浪财经抓取失败: {exc}")
+            logger.error(f"新浪财经抓取失败: url={url}, error={exc}")
 
         return news_list
 
@@ -130,7 +167,7 @@ class NewsService:
                 if len(news_list) >= limit:
                     break
         except Exception as exc:
-            logger.error(f"东方财富抓取失败: {exc}")
+            logger.error(f"东方财富抓取失败: url={url}, error={exc}")
 
         return news_list
 
