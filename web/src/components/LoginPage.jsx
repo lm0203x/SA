@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
+import { apiRequest } from '@/services/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -13,14 +14,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    // 硬编码 admin/admin 直接跳过登录
-    if (username === 'admin' && password === 'admin') {
-      localStorage.setItem('token', 'admin-token');
-      localStorage.setItem('user', JSON.stringify({ id: 0, username: 'admin' }));
-      navigate('/dashboard');
-      return;
-    }
-
     if (!username || !password) {
       setError('请输入用户名和密码');
       return;
@@ -30,14 +23,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const data = await apiRequest('/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ username, password }),
       });
-      const data = await response.json();
 
       if (data.success) {
         localStorage.setItem('token', data.token);

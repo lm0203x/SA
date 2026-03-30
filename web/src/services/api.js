@@ -4,16 +4,31 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.MODE === 'production' ? '/api' : `http://${window.location.hostname}:5000/api`);
 
+function getAuthToken() {
+  try {
+    return window.localStorage.getItem('token');
+  } catch (_error) {
+    return null;
+  }
+}
+
 /**
  * 通用的API请求函数
  */
-async function apiRequest(endpoint, options = {}) {
+export async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = getAuthToken();
+  const mergedHeaders = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  if (token && !mergedHeaders.Authorization) {
+    mergedHeaders.Authorization = `Bearer ${token}`;
+  }
   
   const defaultOptions = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: mergedHeaders,
     ...options,
   };
 
@@ -447,6 +462,39 @@ export async function getWebhookConfigs() {
   return apiRequest('/webhook-configs');
 }
 
+// ==================== 用户管理API ====================
+
+export async function getUsers() {
+  return apiRequest('/users');
+}
+
+export async function createUser(data) {
+  return apiRequest('/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateUser(id, data) {
+  return apiRequest(`/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteUser(id) {
+  return apiRequest(`/users/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// ==================== 操作日志API ====================
+
+export async function getOperationLogs(params = {}) {
+  const queryString = new URLSearchParams(params).toString();
+  return apiRequest(queryString ? `/operation-logs?${queryString}` : '/operation-logs');
+}
+
 /**
  * 创建Webhook配置
  */
@@ -641,4 +689,13 @@ export default {
   batchEnableWebhookConfigs,
   batchDisableWebhookConfigs,
   batchDeleteWebhookConfigs,
+
+  // 用户管理
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+
+  // 操作日志
+  getOperationLogs,
 };
